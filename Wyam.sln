@@ -35,6 +35,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Wyam.Modules.Html.Tests", "
 	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Wyam.Common.Tests", "Wyam.Common.Tests\Wyam.Common.Tests.csproj", "{3E93B31C-5670-413A-947A-77A46456CD13}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Wyam.Modules.Opml", "Wyam.Modules.Opml\Wyam.Modules.Opml.csproj", "{0E7729F7-AAD3-4060-B1C4-A9D909E478E4}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Wyam.Modules.TextGeneration", "Wyam.Modules.TextGeneration\Wyam.Modules.TextGeneration.csproj", "{0D7F4902-C048-46AA-BDD1-B87B657003FF}"
 EndProject
