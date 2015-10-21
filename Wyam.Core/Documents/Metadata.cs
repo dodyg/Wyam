@@ -3,6 +3,8 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using Wyam.Common;
+using Wyam.Common.Documents;
+using Wyam.Common.IO;
 
 namespace Wyam.Core.Documents
 {
@@ -14,7 +16,7 @@ namespace Wyam.Core.Documents
         private readonly Engine _engine;
         private readonly Stack<IDictionary<string, object>> _metadataStack;
         
-        internal Metadata(Engine engine)
+        internal Metadata(Engine engine, IEnumerable<KeyValuePair<string, object>> items = null)
         {
             _engine = engine;
             _metadataStack = new Stack<IDictionary<string, object>>();
@@ -23,19 +25,26 @@ namespace Wyam.Core.Documents
             {
                 dictionary[item.Key] = item.Value;
             }
+            if (items != null)
+            {
+                foreach (KeyValuePair<string, object> item in items)
+                {
+                    dictionary[item.Key] = item.Value;
+                }
+            }
             _metadataStack.Push(dictionary);
         }
 
-        private Metadata(Metadata original, IEnumerable<KeyValuePair<string, object>> metadata)
+        private Metadata(Metadata original, IEnumerable<KeyValuePair<string, object>> items)
         {
             _engine = original._engine;
             _metadataStack = new Stack<IDictionary<string, object>>(original._metadataStack.Reverse());
             _metadataStack.Push(new Dictionary<string, object>());
 
             // Set new items
-            if (metadata != null)
+            if (items != null)
             {
-                foreach (KeyValuePair<string, object> item in metadata)
+                foreach (KeyValuePair<string, object> item in items)
                 {
                     _metadataStack.Peek()[item.Key] = item.Value;
                 }
@@ -48,9 +57,9 @@ namespace Wyam.Core.Documents
         }
 
         // This clones the stack and pushes a new dictionary on to the cloned stack
-        internal Metadata Clone(IEnumerable<KeyValuePair<string, object>> metadata)
+        internal Metadata Clone(IEnumerable<KeyValuePair<string, object>> items)
         {
-            return new Metadata(this, metadata);
+            return new Metadata(this, items);
         }
 
         public bool ContainsKey(string key)
@@ -74,7 +83,7 @@ namespace Wyam.Core.Documents
             {
                 return false;
             }
-            value = meta[key];
+            value = GetValue(key, meta[key]);
             return true;
         }
 
@@ -99,10 +108,19 @@ namespace Wyam.Core.Documents
             return Get<string>(key, defaultValue);
         }
 
-        public string Link(string key, string defaultValue = null)
+        public string Link(string key, string defaultValue = null, bool pretty = true)
         {
             string value = Get<string>(key, defaultValue);
-            return value?.Replace('\\', '/');
+            value = string.IsNullOrWhiteSpace(value) ? "#" : PathHelper.ToRootLink(value);
+            if (pretty && (value == "/index.html" || value == "/index.htm"))
+            {
+                return "/";
+            }
+            if(pretty && (value.EndsWith("/index.html") || value.EndsWith("/index.htm")))
+            {
+                return value.Substring(0, value.LastIndexOf("/", StringComparison.Ordinal));
+            }
+            return value;
         }
 
         public object this[string key]
@@ -116,7 +134,7 @@ namespace Wyam.Core.Documents
                 object value;
                 if (!TryGetValue(key, out value))
                 {
-                    throw new KeyNotFoundException();
+                    throw new KeyNotFoundException("The key " + key + " was not found in metadata, use Get() to provide a default value.");
                 }
                 return value;
             }
@@ -129,12 +147,12 @@ namespace Wyam.Core.Documents
 
         public IEnumerable<object> Values
         {
-            get { return _metadataStack.SelectMany(x => x.Values); }
+            get { return _metadataStack.SelectMany(x => x.Select(y => GetValue(y.Key, y.Value))); }
         }
 
         public IEnumerator<KeyValuePair<string, object>> GetEnumerator()
         {
-            return _metadataStack.SelectMany(x => x).GetEnumerator();
+            return _metadataStack.SelectMany(x => x.Select(GetItem)).GetEnumerator();
         }
 
         IEnumerator IEnumerable.GetEnumerator()
@@ -146,5 +164,20 @@ namespace Wyam.Core.Documents
         {
             get { return _metadataStack.Sum(x => x.Count); }
         }
+
+        // This resolves the metadata value by expanding IMetadataValue
+        private object GetValue(string key, object value)
+        {
+            IMetadataValue metadataValue = value as IMetadataValue;
+            return metadataValue != null ? metadataValue.Get(key, this) : value;
+        }
+
+        // This resolves the metadata value by expanding IMetadataValue
+        // To reduce allocations, it returns the input KeyValuePair if value is not IMetadataValue
+        private KeyValuePair<string, object> GetItem(KeyValuePair<string, object> item)
+        {
+            IMetadataValue metadataValue = item.Value as IMetadataValue;
+            return metadataValue != null ? new KeyValuePair<string, object>(item.Key, metadataValue.Get(item.Key, this)) : item;
+        } 
     }
 }

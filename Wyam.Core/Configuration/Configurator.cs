@@ -14,7 +14,8 @@ using Microsoft.CodeAnalysis.Emit;
 using Microsoft.CodeAnalysis.Text;
 using NuGet;
 using Wyam.Core.NuGet;
-using Wyam.Common;
+using Wyam.Common.Modules;
+using Wyam.Common.Tracing;
 
 namespace Wyam.Core.Configuration
 {
@@ -44,7 +45,7 @@ namespace Wyam.Core.Configuration
             AddAssembly(Assembly.GetAssembly(typeof (System.IO.Stream))); // System.IO
             AddAssembly(Assembly.GetAssembly(typeof (System.Diagnostics.TraceSource))); // System.Diagnostics
             AddAssembly(Assembly.GetAssembly(typeof (Wyam.Core.Engine))); // Wyam.Core
-            AddAssembly(Assembly.GetAssembly(typeof(Wyam.Common.IModule))); // Wyam.Common
+            AddAssembly(Assembly.GetAssembly(typeof(IModule))); // Wyam.Common
 
             // Manually resolve included assemblies
             AppDomain.CurrentDomain.AssemblyResolve += ResolveAssembly;
@@ -148,30 +149,37 @@ namespace Wyam.Core.Configuration
                 using (_engine.Trace.WithIndent().Verbose("Evaluating setup script"))
                 {
                     // Create the setup script
-                    code = @"
+                    StringBuilder codeBuilder = new StringBuilder(@"
                         using System;
                         using Wyam.Core;
                         using Wyam.Core.Configuration;
-                        using Wyam.Core.NuGet;
-                        using Wyam.Common;
-
+                        using Wyam.Core.NuGet;");
+                    codeBuilder.AppendLine();
+                    codeBuilder.AppendLine(string.Join(Environment.NewLine, 
+                        typeof(IModule).Assembly.GetTypes()
+                            .Where(x => !string.IsNullOrWhiteSpace(x.Namespace))
+                            .Select(x => "using " + x.Namespace + ";")
+                            .Distinct()));
+                    codeBuilder.AppendLine(@"
                         public static class SetupScript
                         {
                             public static void Run(IPackagesCollection Packages, IAssemblyCollection Assemblies, string RootFolder, string InputFolder, string OutputFolder)
-                            {" + Environment.NewLine + code + @"
+                            {");
+                    codeBuilder.Append(code);
+                    codeBuilder.AppendLine(@"
                             }
-                        }";
+                        }");
 
                     // Assemblies
                     Assembly[] setupAssemblies = new[]
                     {
                         Assembly.GetAssembly(typeof (object)), // System
                         Assembly.GetAssembly(typeof (Wyam.Core.Engine)), //Wyam.Core
-                        Assembly.GetAssembly(typeof (Wyam.Common.IModule)) // Wyam.Common
+                        Assembly.GetAssembly(typeof (IModule)) // Wyam.Common
                     };
 
                     // Load the dynamic assembly and invoke
-                    _rawSetupAssembly = CompileScript("WyamSetup", setupAssemblies, code, _engine.Trace);
+                    _rawSetupAssembly = CompileScript("WyamSetup", setupAssemblies, codeBuilder.ToString(), _engine.Trace);
                     _setupAssembly = Assembly.Load(_rawSetupAssembly);
                     var configScriptType = _setupAssembly.GetExportedTypes().First(t => t.Name == "SetupScript");
                     MethodInfo runMethod = configScriptType.GetMethod("Run", BindingFlags.Public | BindingFlags.Static);
@@ -199,6 +207,7 @@ namespace Wyam.Core.Configuration
                 HashSet<Type> moduleTypes;
                 using (_engine.Trace.WithIndent().Verbose("Initializing scripting environment"))
                 {
+                    // Initial default namespaces
                     namespaces = new HashSet<string>()
                     {
                         "System",
@@ -208,9 +217,14 @@ namespace Wyam.Core.Configuration
                         "System.Diagnostics",
                         "Wyam.Core",
                         "Wyam.Core.Configuration",
-                        "Wyam.Core.Modules",
-                        "Wyam.Common"
+                        "Wyam.Core.Modules"
                     };
+
+                    // Also include all Wyam.Common namespaces
+                    namespaces.AddRange(typeof (IModule).Assembly.GetTypes()
+                        .Where(x => !string.IsNullOrWhiteSpace(x.Namespace))
+                        .Select(x => x.Namespace)
+                        .Distinct());
 
                     // Add specified assemblies from packages, etc.
                     GetAssemblies();
@@ -298,8 +312,6 @@ namespace Wyam.Core.Configuration
             assemblyPaths.AddRange(_assemblyCollection.ByFile
                 .Select(x => new Tuple<string, string>(x, Path.Combine(_engine.RootFolder, x)))
                 .Select(x => File.Exists(x.Item2) ? x.Item2 : x.Item1));
-
-            List<AssemblyName> referencedAssemblies = new List<AssemblyName>();
 
             // Iterate assemblies by path (making sure to add them to the current path if relative), add them to the script, and check for modules
             foreach (string assemblyPath in assemblyPaths.Distinct())

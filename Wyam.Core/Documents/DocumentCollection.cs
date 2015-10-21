@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using Wyam.Common;
+using Wyam.Common.Documents;
 
 namespace Wyam.Core.Documents
 {
@@ -52,5 +53,7 @@ namespace Wyam.Core.Documents
         {
             return _documents.Where(x => x.Key != pipeline).SelectMany(x => x.Value).Distinct();
         }
+
+        public IEnumerable<IDocument> this[string pipline] => FromPipeline(pipline);
     }
 }

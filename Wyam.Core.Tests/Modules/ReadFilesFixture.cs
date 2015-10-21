@@ -7,6 +7,9 @@ using System.Text;
 using System.Threading.Tasks;
 using Wyam.Core.Modules;
 using Wyam.Common;
+using Wyam.Common.Configuration;
+using Wyam.Common.Documents;
+using Wyam.Common.Pipelines;
 using Wyam.Core.Documents;
 using Wyam.Core.Pipelines;
 
@@ -51,9 +54,8 @@ namespace Wyam.Core.Tests.Modules
             Engine engine = new Engine();
             engine.Trace.AddListener(new TestTraceListener());
             engine.InputFolder = @"TestFiles\Input\";
-            Metadata metadata = new Metadata(engine);
             Pipeline pipeline = new Pipeline("Pipeline", engine, null);
-            IDocument[] inputs = { new Document(metadata, pipeline) };
+            IDocument[] inputs = { new Document(engine, pipeline) };
             IExecutionContext context = new ExecutionContext(engine, pipeline);
             ReadFiles readFiles = new ReadFiles(searchPattern).WithSearchOption(searchOption);
 
@@ -72,9 +74,8 @@ namespace Wyam.Core.Tests.Modules
             Engine engine = new Engine();
             engine.Trace.AddListener(new TestTraceListener());
             engine.InputFolder = @"TestFiles\Input";
-            Metadata metadata = new Metadata(engine);
             Pipeline pipeline = new Pipeline("Pipeline", engine, null);
-            IDocument[] inputs = { new Document(metadata, pipeline) };
+            IDocument[] inputs = { new Document(engine, pipeline) };
             IExecutionContext context = new ExecutionContext(engine, pipeline);
             ReadFiles readFiles = new ReadFiles("*.txt");
 
@@ -93,9 +94,8 @@ namespace Wyam.Core.Tests.Modules
             Engine engine = new Engine();
             engine.Trace.AddListener(new TestTraceListener());
             engine.InputFolder = @"TestFiles\Input";
-            Metadata metadata = new Metadata(engine);
             Pipeline pipeline = new Pipeline("Pipeline", engine, null);
-            IDocument[] inputs = { new Document(metadata, pipeline) };
+            IDocument[] inputs = { new Document(engine, pipeline) };
             IExecutionContext context = new ExecutionContext(engine, pipeline);
             ReadFiles readFiles = new ReadFiles("*.txt");
 
@@ -114,9 +114,8 @@ namespace Wyam.Core.Tests.Modules
             Engine engine = new Engine();
             engine.Trace.AddListener(new TestTraceListener());
             engine.InputFolder = @"TestFiles\Input";
-            Metadata metadata = new Metadata(engine);
             Pipeline pipeline = new Pipeline("Pipeline", engine, null);
-            IDocument[] inputs = { new Document(metadata, pipeline) };
+            IDocument[] inputs = { new Document(engine, pipeline) };
             IExecutionContext context = new ExecutionContext(engine, pipeline);
             ReadFiles readFiles = new ReadFiles(@"Subfolder\*.txt");
 
@@ -135,9 +134,8 @@ namespace Wyam.Core.Tests.Modules
             Engine engine = new Engine();
             engine.Trace.AddListener(new TestTraceListener());
             engine.InputFolder = @"TestFiles\Input";
-            Metadata metadata = new Metadata(engine);
             Pipeline pipeline = new Pipeline("Pipeline", engine, null);
-            IDocument[] inputs = { new Document(metadata, pipeline) };
+            IDocument[] inputs = { new Document(engine, pipeline) };
             IExecutionContext context = new ExecutionContext(engine, pipeline);
             ReadFiles readFiles = new ReadFiles(@"test-a.txt");
 
@@ -156,9 +154,8 @@ namespace Wyam.Core.Tests.Modules
             Engine engine = new Engine();
             engine.Trace.AddListener(new TestTraceListener());
             engine.InputFolder = @"TestFiles\Input";
-            Metadata metadata = new Metadata(engine);
             Pipeline pipeline = new Pipeline("Pipeline", engine, null);
-            IDocument[] inputs = { new Document(metadata, pipeline) };
+            IDocument[] inputs = { new Document(engine, pipeline) };
             IExecutionContext context = new ExecutionContext(engine, pipeline);
             ReadFiles readFiles = new ReadFiles(@"test-a.txt");
 
@@ -185,9 +182,8 @@ namespace Wyam.Core.Tests.Modules
             Engine engine = new Engine();
             engine.Trace.AddListener(new TestTraceListener());
             engine.InputFolder = @"TestFiles\Input";
-            Metadata metadata = new Metadata(engine);
             Pipeline pipeline = new Pipeline("Pipeline", engine, null);
-            IDocument[] inputs = { new Document(metadata, pipeline) };
+            IDocument[] inputs = { new Document(engine, pipeline) };
             IExecutionContext context = new ExecutionContext(engine, pipeline);
             ReadFiles readFiles = new ReadFiles(@"test-c.txt");
 
@@ -205,9 +201,8 @@ namespace Wyam.Core.Tests.Modules
             Engine engine = new Engine();
             engine.Trace.AddListener(new TestTraceListener());
             engine.InputFolder = @"TestFiles\Input";
-            Metadata metadata = new Metadata(engine);
             Pipeline pipeline = new Pipeline("Pipeline", engine, null);
-            IDocument[] inputs = { new Document(metadata, pipeline) };
+            IDocument[] inputs = { new Document(engine, pipeline) };
             IExecutionContext context = new ExecutionContext(engine, pipeline);
             ReadFiles readFiles = new ReadFiles("*.*").WithExtensions(".txt");
 
@@ -226,9 +221,8 @@ namespace Wyam.Core.Tests.Modules
             Engine engine = new Engine();
             engine.Trace.AddListener(new TestTraceListener());
             engine.InputFolder = @"TestFiles\Input";
-            Metadata metadata = new Metadata(engine);
             Pipeline pipeline = new Pipeline("Pipeline", engine, null);
-            IDocument[] inputs = { new Document(metadata, pipeline) };
+            IDocument[] inputs = { new Document(engine, pipeline) };
             IExecutionContext context = new ExecutionContext(engine, pipeline);
             ReadFiles readFiles = new ReadFiles("*.*").WithExtensions("txt", "md");
 
@@ -247,9 +241,8 @@ namespace Wyam.Core.Tests.Modules
             Engine engine = new Engine();
             engine.Trace.AddListener(new TestTraceListener());
             engine.InputFolder = @"TestFiles\Input";
-            Metadata metadata = new Metadata(engine);
             Pipeline pipeline = new Pipeline("Pipeline", engine, null);
-            IDocument[] inputs = { new Document(metadata, pipeline) };
+            IDocument[] inputs = { new Document(engine, pipeline) };
             IExecutionContext context = new ExecutionContext(engine, pipeline);
             ReadFiles readFiles = new ReadFiles("*.*").Where(x => x.Contains("test"));
 
@@ -268,9 +261,8 @@ namespace Wyam.Core.Tests.Modules
             Engine engine = new Engine();
             engine.Trace.AddListener(new TestTraceListener());
             engine.InputFolder = @"TestFiles\Input";
-            Metadata metadata = new Metadata(engine);
             Pipeline pipeline = new Pipeline("Pipeline", engine, null);
-            IDocument[] inputs = { new Document(metadata, pipeline) };
+            IDocument[] inputs = { new Document(engine, pipeline) };
             IExecutionContext context = new ExecutionContext(engine, pipeline);
             ReadFiles readFiles = new ReadFiles("*.*").Where(x => x.Contains("-c")).WithExtensions("txt");
 

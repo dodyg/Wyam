@@ -6,6 +6,11 @@ using System.Text;
 using System.Threading.Tasks;
 using Wyam.Core;
 using Wyam.Common;
+using Wyam.Common.Configuration;
+using Wyam.Common.Documents;
+using Wyam.Common.IO;
+using Wyam.Common.Modules;
+using Wyam.Common.Pipelines;
 using Wyam.Core.Documents;
 
 namespace Wyam.Core.Modules
@@ -65,13 +70,13 @@ namespace Wyam.Core.Modules
         {
             // WritePath
             string path = input.String(MetadataKeys.WritePath);
-            if (path != null)
+            if (!string.IsNullOrWhiteSpace(path))
             {
                 path = PathHelper.NormalizePath(path);
             }
 
             // WriteFileName
-            if (path == null && input.ContainsKey(MetadataKeys.WriteFileName)
+            if (string.IsNullOrWhiteSpace(path) && input.ContainsKey(MetadataKeys.WriteFileName)
                 && input.ContainsKey(MetadataKeys.RelativeFileDir))
             {
                 path = Path.Combine(input.String(MetadataKeys.RelativeFileDir),
@@ -79,7 +84,7 @@ namespace Wyam.Core.Modules
             }
 
             // WriteExtension
-            if (path == null && input.ContainsKey(MetadataKeys.WriteExtension)
+            if (string.IsNullOrWhiteSpace(path) && input.ContainsKey(MetadataKeys.WriteExtension)
                 && input.ContainsKey(MetadataKeys.RelativeFilePath))
             {
                 path = Path.ChangeExtension(input.String(MetadataKeys.RelativeFilePath),
@@ -87,12 +92,12 @@ namespace Wyam.Core.Modules
             }
 
             // Func
-            if (path == null)
+            if (string.IsNullOrWhiteSpace(path))
             {
                 path = _path.Invoke<string>(input, context);
             }
 
-            if (path != null)
+            if (!string.IsNullOrWhiteSpace(path))
             {
                 path = Path.GetFullPath(Path.Combine(context.OutputFolder, path));
                 if (!string.IsNullOrWhiteSpace(path))

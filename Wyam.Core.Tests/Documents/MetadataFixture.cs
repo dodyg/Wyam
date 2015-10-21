@@ -6,8 +6,11 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
+using Wyam.Common;
+using Wyam.Common.Documents;
 using Wyam.Core;
 using Wyam.Core.Documents;
+using Metadata = Wyam.Core.Documents.Metadata;
 
 namespace Wyam.Core.Tests.Documents
 {
@@ -196,6 +199,172 @@ namespace Wyam.Core.Tests.Documents
             // Then
             Assert.AreEqual("a", metadata["A"]);
             Assert.AreEqual("b", clone["A"]);
+        }
+
+        [Test]
+        public void GetWithMetadataValueReturnsCorrectResult()
+        {
+            // Given
+            Engine engine = new Engine();
+            engine.Trace.AddListener(new TestTraceListener());
+            engine.Metadata["A"] = new SimpleMetadataValue { Value = "a" };
+            Metadata metadata = new Metadata(engine);
+
+            // When
+            object value = metadata.Get("A");
+
+            // Then
+            Assert.AreEqual("a", value);
+        }
+
+        [TestCase("foo/bar", false, "/foo/bar")]
+        [TestCase("foo/bar", true, "/foo/bar")]
+        [TestCase("/foo/bar", false, "/foo/bar")]
+        [TestCase("/foo/bar", true, "/foo/bar")]
+        [TestCase("/foo/bar/index.html", false, "/foo/bar/index.html")]
+        [TestCase("/foo/bar/index.html", true, "/foo/bar")]
+        [TestCase("/foo/bar/index.htm", false, "/foo/bar/index.htm")]
+        [TestCase("/foo/bar/index.htm", true, "/foo/bar")]
+        [TestCase("/foo/bar/baz.html", false, "/foo/bar/baz.html")]
+        [TestCase("/foo/bar/baz.html", true, "/foo/bar/baz.html")]
+        [TestCase(null, false, "#")]
+        [TestCase(null, true, "#")]
+        [TestCase("", false, "#")]
+        [TestCase("", true, "#")]
+        [TestCase(" ", false, "#")]
+        [TestCase(" ", true, "#")]
+        [TestCase("/index.html", false, "/index.html")]
+        [TestCase("/index.html", true, "/")]
+        [TestCase("index.html", false, "/index.html")]
+        [TestCase("index.html", true, "/")]
+        [TestCase("/foo.html", false, "/foo.html")]
+        [TestCase("/foo.html", true, "/foo.html")]
+        [TestCase("foo.html", false, "/foo.html")]
+        [TestCase("foo.html", true, "/foo.html")]
+        public void LinkReturnsCorrectResult(string value, bool pretty, string link)
+        {
+            // Given
+            Engine engine = new Engine();
+            engine.Trace.AddListener(new TestTraceListener());
+            engine.Metadata["A"] = new SimpleMetadataValue { Value = value };
+            Metadata metadata = new Metadata(engine);
+
+            // When
+            object result = metadata.Link("A", pretty: pretty);
+
+            // Then
+            Assert.AreEqual(link, result);
+        }
+
+        [Test]
+        public void IndexerWithMetadataValueReturnsCorrectResult()
+        {
+            // Given
+            Engine engine = new Engine();
+            engine.Trace.AddListener(new TestTraceListener());
+            engine.Metadata["A"] = new SimpleMetadataValue { Value = "a" };
+            Metadata metadata = new Metadata(engine);
+
+            // When
+            object value = metadata["A"];
+
+            // Then
+            Assert.AreEqual("a", value);
+        }
+
+        [Test]
+        public void TryGetValueWithMetadataValueReturnsCorrectResult()
+        {
+            // Given
+            Engine engine = new Engine();
+            engine.Trace.AddListener(new TestTraceListener());
+            engine.Metadata["A"] = new SimpleMetadataValue { Value = "a" };
+            Metadata metadata = new Metadata(engine);
+
+            // When
+            object value;
+            bool contains = metadata.TryGetValue("A", out value);
+
+            // Then
+            Assert.IsTrue(contains);
+            Assert.AreEqual("a", value);
+        }
+
+        [Test]
+        public void GetWithDerivedMetadataValueReturnsCorrectResult()
+        {
+            // Given
+            Engine engine = new Engine();
+            engine.Trace.AddListener(new TestTraceListener());
+            engine.Metadata["X"] = "x";
+            engine.Metadata["A"] = new DerivedMetadataValue { Key = "X" };
+            Metadata metadata = new Metadata(engine);
+
+            // When
+            object value = metadata.Get("A");
+
+            // Then
+            Assert.AreEqual("x", value);
+        }
+
+        [Test]
+        public void GetWithMetadataValueCalledForEachRequest()
+        {
+            // Given
+            Engine engine = new Engine();
+            engine.Trace.AddListener(new TestTraceListener());
+            SimpleMetadataValue metadataValue = new SimpleMetadataValue { Value = "a" };
+            engine.Metadata["A"] = metadataValue;
+            Metadata metadata = new Metadata(engine);
+
+            // When
+            object value = metadata.Get("A");
+            value = metadata.Get("A");
+            value = metadata.Get("A");
+
+            // Then
+            Assert.AreEqual("a", value);
+            Assert.AreEqual(3, metadataValue.Calls);
+        }
+
+        [Test]
+        public void EnumeratingMetadataValuesReturnsCorrectResults()
+        {
+            // Given
+            Engine engine = new Engine();
+            engine.Trace.AddListener(new TestTraceListener());
+            engine.Metadata["A"] = new SimpleMetadataValue { Value = "a" };
+            engine.Metadata["B"] = new SimpleMetadataValue { Value = "b" };
+            engine.Metadata["C"] = new SimpleMetadataValue { Value = "c" };
+            Metadata metadata = new Metadata(engine);
+
+            // When
+            object[] values = metadata.Select(x => x.Value).ToArray();
+
+            // Then
+            CollectionAssert.AreEquivalent(new [] { "a", "b", "c" }, values);
+        }
+
+        private class SimpleMetadataValue : IMetadataValue
+        {
+            public string Value { get; set; }
+            public int Calls { get; set; }
+
+            public object Get(string key, IMetadata metadata)
+            {
+                Calls++;
+                return Value;
+            }
+        }
+
+        private class DerivedMetadataValue : IMetadataValue
+        {
+            public string Key { get; set; }
+
+            public object Get(string key, IMetadata metadata)
+            {
+                return metadata[Key];
+            }
         }
     }
 }

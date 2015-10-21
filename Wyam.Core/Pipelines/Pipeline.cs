@@ -6,6 +6,9 @@ using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Linq;
 using Wyam.Common;
+using Wyam.Common.Documents;
+using Wyam.Common.Modules;
+using Wyam.Common.Pipelines;
 using Wyam.Core.Caching;
 using Wyam.Core.Documents;
 
@@ -208,7 +211,7 @@ namespace Wyam.Core.Pipelines
 
             // Execute all modules in the pipeline
             ExecutionContext context = new ExecutionContext(_engine, this);
-            ImmutableArray<IDocument> inputs = new IDocument[] { new Document(new Metadata(_engine), this) }.ToImmutableArray();
+            ImmutableArray<IDocument> inputs = new IDocument[] { new Document(_engine, this) }.ToImmutableArray();
             IReadOnlyList<IDocument> resultDocuments = Execute(context, _modules, inputs);
 
             // Dispose documents that aren't part of the final collection for this pipeline
@@ -260,7 +263,7 @@ namespace Wyam.Core.Pipelines
             }
             if (!_documentSources.Add(source))
             {
-                throw new ArgumentException("Document source must be unique within the pipeline.");
+                throw new ArgumentException("Document source must be unique within the pipeline: " + source);
             }
         }
 

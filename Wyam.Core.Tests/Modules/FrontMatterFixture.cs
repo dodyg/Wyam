@@ -6,6 +6,8 @@ using System.Threading.Tasks;
 using NUnit.Framework;
 using Wyam.Core.Modules;
 using Wyam.Common;
+using Wyam.Common.Documents;
+using Wyam.Common.Pipelines;
 using Wyam.Core.Documents;
 using Wyam.Core.Pipelines;
 
@@ -20,10 +22,9 @@ namespace Wyam.Core.Tests.Modules
             // Given
             Engine engine = new Engine();
             engine.Trace.AddListener(new TestTraceListener());
-            Metadata metadata = new Metadata(engine);
             Pipeline pipeline = new Pipeline("Pipeline", engine, null);
             IExecutionContext context = new ExecutionContext(engine, pipeline);
-            IDocument[] inputs = { new Document(metadata, pipeline).Clone(@"FM1
+            IDocument[] inputs = { new Document(engine, pipeline).Clone(@"FM1
 FM2
 ---
 Content1
@@ -53,10 +54,9 @@ Content2", documents.First().Content);
             // Given
             Engine engine = new Engine();
             engine.Trace.AddListener(new TestTraceListener());
-            Metadata metadata = new Metadata(engine);
             Pipeline pipeline = new Pipeline("Pipeline", engine, null);
             IExecutionContext context = new ExecutionContext(engine, pipeline);
-            IDocument[] inputs = { new Document(metadata, pipeline).Clone(@"FM1
+            IDocument[] inputs = { new Document(engine, pipeline).Clone(@"FM1
 FM2
 ---
 Content1
@@ -87,10 +87,9 @@ Content2", documents.First().Content);
             // Given
             Engine engine = new Engine();
             engine.Trace.AddListener(new TestTraceListener());
-            Metadata metadata = new Metadata(engine);
             Pipeline pipeline = new Pipeline("Pipeline", engine, null);
             IExecutionContext context = new ExecutionContext(engine, pipeline);
-            IDocument[] inputs = { new Document(metadata, pipeline).Clone(@"FM1
+            IDocument[] inputs = { new Document(engine, pipeline).Clone(@"FM1
 FM2
 ABC
 Content1
@@ -120,10 +119,9 @@ Content2", documents.First().Content);
             // Given
             Engine engine = new Engine();
             engine.Trace.AddListener(new TestTraceListener());
-            Metadata metadata = new Metadata(engine);
             Pipeline pipeline = new Pipeline("Pipeline", engine, null);
             IExecutionContext context = new ExecutionContext(engine, pipeline);
-            IDocument[] inputs = { new Document(metadata, pipeline).Clone(@"FM1
+            IDocument[] inputs = { new Document(engine, pipeline).Clone(@"FM1
 FM2
 !!!!
 Content1
@@ -153,10 +151,9 @@ Content2", documents.First().Content);
             // Given
             Engine engine = new Engine();
             engine.Trace.AddListener(new TestTraceListener());
-            Metadata metadata = new Metadata(engine);
             Pipeline pipeline = new Pipeline("Pipeline", engine, null);
             IExecutionContext context = new ExecutionContext(engine, pipeline);
-            IDocument[] inputs = { new Document(metadata, pipeline).Clone(@"FM1
+            IDocument[] inputs = { new Document(engine, pipeline).Clone(@"FM1
 FM2
 !!!!  
 Content1
@@ -186,10 +183,9 @@ Content2", documents.First().Content);
             // Given
             Engine engine = new Engine();
             engine.Trace.AddListener(new TestTraceListener());
-            Metadata metadata = new Metadata(engine);
             Pipeline pipeline = new Pipeline("Pipeline", engine, null);
             IExecutionContext context = new ExecutionContext(engine, pipeline);
-            IDocument[] inputs = { new Document(metadata, pipeline).Clone(@"FM1
+            IDocument[] inputs = { new Document(engine, pipeline).Clone(@"FM1
 FM2
   !!!!
 Content1
@@ -220,10 +216,9 @@ Content2", documents.First().Content);
             // Given
             Engine engine = new Engine();
             engine.Trace.AddListener(new TestTraceListener());
-            Metadata metadata = new Metadata(engine);
             Pipeline pipeline = new Pipeline("Pipeline", engine, null);
             IExecutionContext context = new ExecutionContext(engine, pipeline);
-            IDocument[] inputs = { new Document(metadata, pipeline).Clone(@"FM1
+            IDocument[] inputs = { new Document(engine, pipeline).Clone(@"FM1
 FM2
 
 !!!!
@@ -257,10 +252,9 @@ Content2", documents.First().Content);
             // Given
             Engine engine = new Engine();
             engine.Trace.AddListener(new TestTraceListener());
-            Metadata metadata = new Metadata(engine);
             Pipeline pipeline = new Pipeline("Pipeline", engine, null);
             IExecutionContext context = new ExecutionContext(engine, pipeline);
-            IDocument[] inputs = { new Document(metadata, pipeline).Clone(@"FM1
+            IDocument[] inputs = { new Document(engine, pipeline).Clone(@"FM1
 FM2
 !
 Content1
@@ -290,12 +284,11 @@ Content2", documents.First().Content);
             // Given
             Engine engine = new Engine();
             engine.Trace.AddListener(new TestTraceListener());
-            Metadata metadata = new Metadata(engine);
             Pipeline pipeline = new Pipeline("Pipeline", engine, null);
             IExecutionContext context = new ExecutionContext(engine, pipeline);
-            IDocument[] inputs = { new Document(metadata, pipeline).Clone(@"AA
+            IDocument[] inputs = { new Document(engine, pipeline).Clone(@"AA
 -
-XX"), new Document(metadata, pipeline).Clone(@"BB
+XX"), new Document(engine, pipeline).Clone(@"BB
 -
 YY") };
             string frontMatterContent = string.Empty;

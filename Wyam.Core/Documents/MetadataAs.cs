@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using Wyam.Common;
+using Wyam.Common.Documents;
 
 namespace Wyam.Core.Documents
 {
@@ -67,7 +68,7 @@ namespace Wyam.Core.Documents
                 T value;
                 if (!TryGetValue(key, out value))
                 {
-                    throw new KeyNotFoundException();
+                    throw new KeyNotFoundException("The key " + key + " was not found in metadata, use Get() to provide a default value.");
                 }
                 return value;
             }
