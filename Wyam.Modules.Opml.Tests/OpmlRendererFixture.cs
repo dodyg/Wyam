@@ -9,6 +9,7 @@ using Wyam.Common;
 using NSubstitute;
 using System.Net.Http;
 using System.IO;
+using Wyam.Common.Documents;
 
 namespace Wyam.Modules.Opml.Tests
 {
