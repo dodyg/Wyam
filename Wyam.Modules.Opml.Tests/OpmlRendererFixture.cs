@@ -25,18 +25,25 @@ namespace Wyam.Modules.Opml.Tests
 
             IDocument document = Substitute.For<IDocument>();
 
-            IEnumerable<KeyValuePair<string, object>> metadata = null;
             document.Content.Returns(opmlDoc);
             document
-                .When(x => x.Clone(Arg.Any<IEnumerable<KeyValuePair<string, object>>>()))
-                .Do(x => metadata = x.Arg<IEnumerable<KeyValuePair<string, object>>>());
+                .Clone(Arg.Any<string>(), Arg.Any<IEnumerable<KeyValuePair<string, object>>>())
+                .Returns(x =>
+                {
+                    IDocument res = Substitute.For<IDocument>();
+                    res.Content.Returns((string)x[0]);
+                    var data = (IEnumerable<KeyValuePair<string, object>>)x[1];
+                    res.Metadata.Count.Returns(data.Count());
+                    return res;
+                });
 
             var result = opml.Execute(new IDocument[] { document }, null).ToList();
 
             Assert.Greater(result.Count, 0, "Must contains outlines");
             foreach(var x in result)
             {
-                Console.WriteLine(x.Content);
+                Assert.IsNotNullOrEmpty(x.Content);
+                Console.WriteLine(x.Content + " - " +  x.Metadata.Count());
             }
         }
 

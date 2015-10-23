@@ -36,11 +36,13 @@ namespace Wyam.Modules.Opml
 
                 var docs = new List<IDocument>();
 
-                return opml.Where(x => x.Level >= _levelFilter).Select(o =>
+                var results = opml.Where(x => x.Level >= _levelFilter).Select(o =>
                 {
                     var metadata = o.Attributes.Select(x => new KeyValuePair<string, object>(x.Key, x.Value));
-                    return input.Clone(o.Text, metadata);
+                    return input.Clone(content: o.Text, items: metadata);
                 });
+
+                return results;
             });
         }
     }
