@@ -17,12 +17,48 @@ namespace Wyam.Modules.Opml.Tests
     public class OpmlRendererFixture
     {
         [Test]
-        public async Task SimpleReplacementOutput()
+        public async Task OutlineWithoutAttributes()
         {
             var opmlDoc = await DownloadUrl("http://hosting.opml.org/dave/spec/placesLived.opml");
 
-            var opml = new OpmlRenderer(level:1);
+            IDocument document = GetDocumentMock(opmlDoc);
 
+            var opml = new OpmlRenderer(level:1);
+            
+            var result = opml.Execute(new IDocument[] { document }, null).ToList();
+
+            Assert.Greater(result.Count, 0, "Must contains outlines");
+            foreach(var x in result)
+            {
+                Assert.IsNotNullOrEmpty(x.Content);
+                Console.WriteLine(x.Content + " - " +  x.Metadata.Count);
+            }
+        }
+
+        [Test]
+        [TestCase("http://hosting.opml.org/dave/spec/subscriptionList.opml")]
+        [TestCase("http://hosting.opml.org/dave/spec/directory.opml")]
+        public async Task OutlineWithAttributes(string url)
+        {
+            var opmlDoc = await DownloadUrl(url);
+
+            IDocument document = GetDocumentMock(opmlDoc);
+
+            var opml = new OpmlRenderer(level: 1);
+
+            var result = opml.Execute(new IDocument[] { document }, null).ToList();
+
+            Assert.Greater(result.Count, 0, "Must contains outlines");
+            foreach (var x in result)
+            {
+                Assert.IsNotNullOrEmpty(x.Content, "Content cannot be null or empty");
+                Assert.IsTrue(x.Metadata.Count > 0, "Metadata count cannot be zero");
+                Console.WriteLine(x.Content + " - " + x.Metadata.Count);
+            }
+        }
+
+        IDocument GetDocumentMock(string opmlDoc)
+        {
             IDocument document = Substitute.For<IDocument>();
 
             document.Content.Returns(opmlDoc);
@@ -37,14 +73,7 @@ namespace Wyam.Modules.Opml.Tests
                     return res;
                 });
 
-            var result = opml.Execute(new IDocument[] { document }, null).ToList();
-
-            Assert.Greater(result.Count, 0, "Must contains outlines");
-            foreach(var x in result)
-            {
-                Assert.IsNotNullOrEmpty(x.Content);
-                Console.WriteLine(x.Content + " - " +  x.Metadata.Count());
-            }
+            return document;
         }
 
         async Task<string> DownloadUrl(string url)
