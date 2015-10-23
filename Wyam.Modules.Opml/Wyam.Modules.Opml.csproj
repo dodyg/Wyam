@@ -40,6 +40,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="MetadataKeys.cs" />
     <Compile Include="OpmlDoc.cs" />
     <Compile Include="OpmlRenderer.cs" />
     <Compile Include="Outline.cs" />

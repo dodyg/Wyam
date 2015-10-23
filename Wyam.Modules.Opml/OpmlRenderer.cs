@@ -38,7 +38,9 @@ namespace Wyam.Modules.Opml
 
                 var results = opml.Where(x => x.Level >= _levelFilter).Select(o =>
                 {
-                    var metadata = o.Attributes.Select(x => new KeyValuePair<string, object>(x.Key, x.Value));
+                    var level = new KeyValuePair<string, object>(MetadataKeys.OutlineLevel, o.Level);
+                    var metadata = o.Attributes.Select(x => new KeyValuePair<string, object>(x.Key, x.Value)).ToList();
+                    metadata.Add(level);
                     return input.Clone(content: o.Text, items: metadata);
                 });
 
