@@ -36,6 +36,35 @@ namespace Wyam.Modules.Opml.Tests
         }
 
         [Test]
+        public async Task SimpleRenderer()
+        {
+            var opmlDoc = await DownloadUrl("http://hosting.opml.org/dave/spec/placesLived.opml");
+
+            IDocument document = GetDocumentMock(opmlDoc);
+
+            var opml = new OpmlReader(level: 1);
+
+            var result = opml.Execute(new IDocument[] { document }, null).ToList();
+
+            Assert.Greater(result.Count, 0, "Must contains outlines");
+
+            var opmlRenderer = new OpmlTextRenderer().SetupLevel(1, (content, metadata) =>
+            {
+                return $"<h1>{content}</h1>";
+            }).SetupLevel(2, (content, metadata) =>
+            {
+                return $"<h2>{content}</h2>";
+            });
+
+            var result2 = opmlRenderer.Execute(result, null).ToList();
+
+            var outputResult = result2.First().Content;
+
+            Console.WriteLine("Output " + outputResult);
+            Assert.IsNotNullOrEmpty(outputResult, "Rendered output cannot be empty");
+        }
+
+        [Test]
         public async Task EnsureLevelMetaDataExists()
         {
             var opmlDoc = await DownloadUrl("http://hosting.opml.org/dave/spec/placesLived.opml");
@@ -88,14 +117,24 @@ namespace Wyam.Modules.Opml.Tests
                 {
                     IDocument res = Substitute.For<IDocument>();
                     res.Content.Returns((string)x[0]);
+                    
                     var metadata = (IEnumerable<KeyValuePair<string, object>>)x[1];
                     res.Metadata.Count.Returns(metadata.Count());
-
 
                     res.Metadata[Arg.Any<string>()].Returns(m =>
                     {
                         var key = m[0] as string;
                         return metadata.First(xx => xx.Key == key).Value;
+                    });
+
+                    //This is some Inception mind blowing level of mocking here
+                    res.Clone(Arg.Any<string>(), Arg.Any<IEnumerable<KeyValuePair<string, object>>>())
+                    .Returns(xx =>
+                    {
+                        IDocument res2 = Substitute.For<IDocument>();
+                        res2.Content.Returns((String)xx[0]);
+
+                        return res2;
                     });
 
                     return res;
