@@ -11,18 +11,18 @@ using Wyam.Common.Pipelines;
 
 namespace Wyam.Modules.Opml
 {
-    public class OpmlRenderer : IModule
+    public class OpmlReader : IModule
     {
         OpmlDoc _doc = new OpmlDoc();
 
         public int _levelFilter { get; set; } = 0;
 
-        public OpmlRenderer()
+        public OpmlReader()
         {
 
         }
 
-        public OpmlRenderer(int level)
+        public OpmlReader(int level)
         {
             _levelFilter = level;
         }

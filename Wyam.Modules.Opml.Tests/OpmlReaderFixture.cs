@@ -14,7 +14,7 @@ using Wyam.Common.Documents;
 namespace Wyam.Modules.Opml.Tests
 {
     [TestFixture]
-    public class OpmlRendererFixture
+    public class OpmlReaderFixture
     {
         [Test]
         public async Task OutlineWithoutAttributes()
@@ -23,7 +23,7 @@ namespace Wyam.Modules.Opml.Tests
 
             IDocument document = GetDocumentMock(opmlDoc);
 
-            var opml = new OpmlRenderer(level:1);
+            var opml = new OpmlReader(level:1);
             
             var result = opml.Execute(new IDocument[] { document }, null).ToList();
 
@@ -42,7 +42,7 @@ namespace Wyam.Modules.Opml.Tests
 
             IDocument document = GetDocumentMock(opmlDoc);
 
-            var opml = new OpmlRenderer(level: 1);
+            var opml = new OpmlReader(level: 1);
 
             var result = opml.Execute(new IDocument[] { document }, null).ToList();
 
@@ -64,7 +64,7 @@ namespace Wyam.Modules.Opml.Tests
 
             IDocument document = GetDocumentMock(opmlDoc);
 
-            var opml = new OpmlRenderer(level: 1);
+            var opml = new OpmlReader(level: 1);
 
             var result = opml.Execute(new IDocument[] { document }, null).ToList();
 

@@ -42,7 +42,7 @@
   <ItemGroup>
     <Compile Include="MetadataKeys.cs" />
     <Compile Include="OpmlDoc.cs" />
-    <Compile Include="OpmlRenderer.cs" />
+    <Compile Include="OpmlReader.cs" />
     <Compile Include="Outline.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
