@@ -13,11 +13,22 @@ namespace Wyam.Modules.Opml
 {
     public class OpmlTextRenderer : IModule
     {
-        Dictionary<int, Formatter> Renderer = new Dictionary<int, Formatter>();
+        Dictionary<int, Formatter> Formatters = new Dictionary<int, Formatter>();
 
-        public OpmlTextRenderer SetupLevel(int level, Formatter func)
+        Formatter DefaultFormatter = (content, metadata) =>
         {
-            Renderer.Add(level, func);
+            return content;
+        };
+
+        public OpmlTextRenderer SetFormatter(Formatter func)
+        {
+            DefaultFormatter = func;
+            return this;
+        }
+
+        public OpmlTextRenderer SetFormatter(int level, Formatter func)
+        {
+            Formatters.Add(level, func);
             return this;
         }
 
@@ -29,10 +40,15 @@ namespace Wyam.Modules.Opml
             {
                 var level = (int)i.Metadata[MetadataKeys.OutlineLevel];
 
-                if (Renderer.ContainsKey(level))
+                if (Formatters.ContainsKey(level))
                 {
-                    var render = Renderer[level];
+                    var render = Formatters[level];
                     var output = render(i.Content, i.Metadata);
+                    str.AppendLine(output);
+                }
+                else
+                {
+                    var output = DefaultFormatter(i.Content, i.Metadata);
                     str.AppendLine(output);
                 }
             }

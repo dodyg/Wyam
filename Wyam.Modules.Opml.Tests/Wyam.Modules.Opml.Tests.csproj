@@ -50,6 +50,7 @@
   <ItemGroup>
     <Compile Include="OpmlDocFixture.cs" />
     <Compile Include="OpmlReaderFixture.cs" />
+    <Compile Include="OpmlTextRendererFixture.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>

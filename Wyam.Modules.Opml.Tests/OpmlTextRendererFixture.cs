@@ -1,43 +1,20 @@
-﻿using System;
+﻿using NSubstitute;
+using NUnit.Framework;
+using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
-using NUnit;
-using NUnit.Framework;
-using Wyam.Common;
-using NSubstitute;
-using System.Net.Http;
-using System.IO;
 using Wyam.Common.Documents;
 
 namespace Wyam.Modules.Opml.Tests
 {
     [TestFixture]
-    public class OpmlReaderFixture
+    public class OpmlTextRendererFixture
     {
         [Test]
-        public async Task OutlineWithoutAttributes()
-        {
-            var opmlDoc = await DownloadUrl("http://hosting.opml.org/dave/spec/placesLived.opml");
-
-            IDocument document = GetDocumentMock(opmlDoc);
-
-            var opml = new OpmlReader(level:1);
-            
-            var result = opml.Execute(new IDocument[] { document }, null).ToList();
-
-            Assert.Greater(result.Count, 0, "Must contains outlines");
-            foreach(var x in result)
-            {
-                Assert.IsNotNullOrEmpty(x.Content);
-                Console.WriteLine(x.Content + " - " +  x.Metadata.Count);
-            }
-        }
-
-
-        [Test]
-        public async Task EnsureLevelMetaDataExists()
+        public async Task DefaultRenderer()
         {
             var opmlDoc = await DownloadUrl("http://hosting.opml.org/dave/spec/placesLived.opml");
 
@@ -48,20 +25,22 @@ namespace Wyam.Modules.Opml.Tests
             var result = opml.Execute(new IDocument[] { document }, null).ToList();
 
             Assert.Greater(result.Count, 0, "Must contains outlines");
-            foreach (var x in result)
-            {
-                Assert.IsNotNullOrEmpty(x.Content, "Content cannot be empty");
-                Assert.IsTrue(((int)x.Metadata[MetadataKeys.OutlineLevel]) > 0, "Level must be greater than zero because we filter level by 1");
-                Console.WriteLine($"{x.Content}, Count {x.Metadata.Count}, Level {x.Metadata[MetadataKeys.OutlineLevel]}");
-            }
+
+            var opmlRenderer = new OpmlTextRenderer();
+
+            var result2 = opmlRenderer.Execute(result, null).ToList();
+
+            var outputResult = result2.First().Content;
+
+            Console.WriteLine("Output " + outputResult);
+            Assert.IsNotNullOrEmpty(outputResult, "Rendered output cannot be empty");
+
         }
 
         [Test]
-        [TestCase("http://hosting.opml.org/dave/spec/subscriptionList.opml")]
-        [TestCase("http://hosting.opml.org/dave/spec/directory.opml")]
-        public async Task OutlineWithAttributes(string url)
+        public async Task LevelRenderer()
         {
-            var opmlDoc = await DownloadUrl(url);
+            var opmlDoc = await DownloadUrl("http://hosting.opml.org/dave/spec/placesLived.opml");
 
             IDocument document = GetDocumentMock(opmlDoc);
 
@@ -70,12 +49,21 @@ namespace Wyam.Modules.Opml.Tests
             var result = opml.Execute(new IDocument[] { document }, null).ToList();
 
             Assert.Greater(result.Count, 0, "Must contains outlines");
-            foreach (var x in result)
+
+            var opmlRenderer = new OpmlTextRenderer().SetFormatter(1, (content, metadata) =>
             {
-                Assert.IsNotNullOrEmpty(x.Content, "Content cannot be null or empty");
-                Assert.IsTrue(x.Metadata.Count > 0, "Metadata count cannot be zero");
-                Console.WriteLine(x.Content + " - " + x.Metadata.Count);
-            }
+                return $"<h1>{content}</h1>";
+            }).SetFormatter(2, (content, metadata) =>
+            {
+                return $"<h2>{content}</h2>";
+            });
+
+            var result2 = opmlRenderer.Execute(result, null).ToList();
+
+            var outputResult = result2.First().Content;
+
+            Console.WriteLine("Output " + outputResult);
+            Assert.IsNotNullOrEmpty(outputResult, "Rendered output cannot be empty");
         }
 
         IDocument GetDocumentMock(string opmlDoc)
@@ -89,7 +77,7 @@ namespace Wyam.Modules.Opml.Tests
                 {
                     IDocument res = Substitute.For<IDocument>();
                     res.Content.Returns((string)x[0]);
-                    
+
                     var metadata = (IEnumerable<KeyValuePair<string, object>>)x[1];
                     res.Metadata.Count.Returns(metadata.Count());
 
@@ -99,11 +87,22 @@ namespace Wyam.Modules.Opml.Tests
                         return metadata.First(xx => xx.Key == key).Value;
                     });
 
+                    //This is some Inception mind blowing level of mocking here
+                    res.Clone(Arg.Any<string>(), Arg.Any<IEnumerable<KeyValuePair<string, object>>>())
+                    .Returns(xx =>
+                    {
+                        IDocument res2 = Substitute.For<IDocument>();
+                        res2.Content.Returns((String)xx[0]);
+
+                        return res2;
+                    });
+
                     return res;
                 });
 
             return document;
         }
+
 
         async Task<string> DownloadUrl(string url)
         {
