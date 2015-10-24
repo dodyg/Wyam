@@ -54,9 +54,8 @@ namespace Wyam.Modules.Opml
             }
 
             var result = str.ToString();
-            var inp = inputs.First();
             var meta = new List<KeyValuePair<string, object>>();
-            var o = inp.Clone(result, meta);
+            var o = context.GetNewDocument(result, meta);
             return new[] { o };
         }
     }
