@@ -55,11 +55,14 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Documents\DocumentFixture.cs" />
+    <Compile Include="Modules\BranchConcatFixture.cs" />
     <Compile Include="Configuration\ConfiguratorFixture.cs" />
     <Compile Include="EngineFixture.cs" />
     <Compile Include="Documents\MetadataAsFixture.cs" />
     <Compile Include="Documents\MetadataFixture.cs" />
     <Compile Include="Modules\BranchFixture.cs" />
+    <Compile Include="Modules\DirectoryMetaFixture.cs" />
     <Compile Include="Modules\DocumentsFixture.cs" />
     <Compile Include="Modules\ExecuteFixture.cs" />
     <Compile Include="Modules\FrontMatterFixture.cs" />
