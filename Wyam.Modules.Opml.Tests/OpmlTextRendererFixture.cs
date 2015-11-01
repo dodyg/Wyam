@@ -7,6 +7,7 @@ using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
 using Wyam.Common.Documents;
+using Wyam.Common.Pipelines;
 
 namespace Wyam.Modules.Opml.Tests
 {
@@ -28,7 +29,8 @@ namespace Wyam.Modules.Opml.Tests
 
             var opmlRenderer = new OpmlTextRenderer();
 
-            var result2 = opmlRenderer.Execute(result, null).ToList();
+            IExecutionContext context = GetExecutionContext();
+            var result2 = opmlRenderer.Execute(result, context).ToList();
 
             var outputResult = result2.First().Content;
 
@@ -58,12 +60,47 @@ namespace Wyam.Modules.Opml.Tests
                 return $"<h2>{content}</h2>";
             });
 
-            var result2 = opmlRenderer.Execute(result, null).ToList();
+            IExecutionContext context = GetExecutionContext();
+
+            var result2 = opmlRenderer.Execute(result, context).ToList();
 
             var outputResult = result2.First().Content;
 
             Console.WriteLine("Output " + outputResult);
             Assert.IsNotNullOrEmpty(outputResult, "Rendered output cannot be empty");
+        }
+
+        IExecutionContext GetExecutionContext()
+        {
+            IExecutionContext context = Substitute.For<IExecutionContext>();
+            context.GetNewDocument(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<IEnumerable<KeyValuePair<string, object>>>())
+            .Returns(x =>
+            {
+
+                IDocument res = Substitute.For<IDocument>();
+                res.Source.Returns((string)x[0]);
+                res.Content.Returns((string)x[1]);
+
+                var metadata = (IEnumerable<KeyValuePair<string, object>>)x[2];
+                res.Metadata.Count.Returns(metadata.Count());
+
+                return res;
+            });
+
+            context.GetNewDocument(Arg.Any<string>(), Arg.Any<IEnumerable<KeyValuePair<string, object>>>())
+            .Returns(x =>
+            {
+
+                IDocument res = Substitute.For<IDocument>();
+                res.Content.Returns((string)x[0]);
+
+                var metadata = (IEnumerable<KeyValuePair<string, object>>)x[1];
+                res.Metadata.Count.Returns(metadata.Count());
+
+                return res;
+            });
+
+            return context;
         }
 
         IDocument GetDocumentMock(string opmlDoc)
@@ -72,13 +109,13 @@ namespace Wyam.Modules.Opml.Tests
 
             document.Content.Returns(opmlDoc);
             document
-                .Clone(Arg.Any<string>(), Arg.Any<IEnumerable<KeyValuePair<string, object>>>())
+                .Clone(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<IEnumerable<KeyValuePair<string, object>>>())
                 .Returns(x =>
                 {
                     IDocument res = Substitute.For<IDocument>();
-                    res.Content.Returns((string)x[0]);
+                    res.Content.Returns((string)x[1]);
 
-                    var metadata = (IEnumerable<KeyValuePair<string, object>>)x[1];
+                    var metadata = (IEnumerable<KeyValuePair<string, object>>)x[2];
                     res.Metadata.Count.Returns(metadata.Count());
 
                     res.Metadata[Arg.Any<string>()].Returns(m =>
@@ -88,11 +125,11 @@ namespace Wyam.Modules.Opml.Tests
                     });
 
                     //This is some Inception mind blowing level of mocking here
-                    res.Clone(Arg.Any<string>(), Arg.Any<IEnumerable<KeyValuePair<string, object>>>())
+                    res.Clone(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<IEnumerable<KeyValuePair<string, object>>>())
                     .Returns(xx =>
                     {
                         IDocument res2 = Substitute.For<IDocument>();
-                        res2.Content.Returns((String)xx[0]);
+                        res2.Content.Returns((String)xx[1]);
 
                         return res2;
                     });

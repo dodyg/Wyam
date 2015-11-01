@@ -10,7 +10,6 @@ namespace Wyam.Modules.Opml.Tests
     [TestFixture]
     public class OpmlDocFixture
     {
-
         [Test]
         public async Task SimpleTest()
         {
