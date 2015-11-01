@@ -27,16 +27,16 @@ namespace Wyam.Modules.Opml
     {
         Dictionary<int, Formatter> Formatters = new Dictionary<int, Formatter>();
 
-        Dictionary<int, Formatter> UpFormatter = new Dictionary<int, Formatter>();
+        Dictionary<int, Formatter> OnGoingUpFormatter = new Dictionary<int, Formatter>();
 
-        Dictionary<int, Formatter> DownFormatter = new Dictionary<int, Formatter>();
+        Dictionary<int, Formatter> OnGoingDownFormatter = new Dictionary<int, Formatter>();
 
-        Formatter DefaultDownFormatter = (content, metadata) =>
+        Formatter DefaultOnGoingDownFormatter = (content, metadata) =>
         {
             return "";
         };
 
-        Formatter DefaultUpFormatter = (content, metadata) =>
+        Formatter DefaultOnGoingUpFormatter = (content, metadata) =>
         {
             return "";
         };
@@ -51,7 +51,7 @@ namespace Wyam.Modules.Opml
             return "";
         };
 
-        Formatter WindDownFormatter = (content, metadata) =>
+        Formatter EndingFormatter = (content, metadata) =>
         {
             return "";
         };
@@ -76,9 +76,9 @@ namespace Wyam.Modules.Opml
         public OpmlTextRenderer SetFormatter(OutlineDirection direction, Formatter func)
         {
             if (direction == OutlineDirection.Up)
-                DefaultUpFormatter = func;
+                DefaultOnGoingUpFormatter = func;
             else if (direction == OutlineDirection.Down)
-                DefaultDownFormatter = func;
+                DefaultOnGoingDownFormatter = func;
 
             return this;
         }
@@ -87,11 +87,11 @@ namespace Wyam.Modules.Opml
         {
             if (direction == OutlineDirection.Up)
             {
-                UpFormatter.Add(level, func);
+                OnGoingUpFormatter.Add(level, func);
             }
             else if (direction == OutlineDirection.Down)
             {
-                DownFormatter.Add(level, func);
+                OnGoingDownFormatter.Add(level, func);
             }
 
             return this;
@@ -108,9 +108,9 @@ namespace Wyam.Modules.Opml
             return this;
         }
 
-        public OpmlTextRenderer SetWindDownText(string end)
+        public OpmlTextRenderer SetEndingString(string end)
         {
-            WindDownFormatter = (content, metadata) => end;
+            EndingFormatter = (content, metadata) => end;
 
             return this;
         }
@@ -119,24 +119,24 @@ namespace Wyam.Modules.Opml
         {
             if (direction == OutlineDirection.Up)
             {
-                if (UpFormatter.ContainsKey(level))
+                if (OnGoingUpFormatter.ContainsKey(level))
                 {
-                    var f = UpFormatter[level];
+                    var f = OnGoingUpFormatter[level];
                     return f(content, metadata);
                 }
 
-                return DefaultUpFormatter(content, metadata);
+                return DefaultOnGoingUpFormatter(content, metadata);
             }
 
             if (direction == OutlineDirection.Down)
             {
-                if (DownFormatter.ContainsKey(level))
+                if (OnGoingDownFormatter.ContainsKey(level))
                 {
-                    var f = DownFormatter[level];
+                    var f = OnGoingDownFormatter[level];
                     return f(content, metadata);
                 }
 
-                return DefaultDownFormatter(content, metadata);
+                return DefaultOnGoingDownFormatter(content, metadata);
             }
 
             return string.Empty;
@@ -183,8 +183,6 @@ namespace Wyam.Modules.Opml
                     if (!string.IsNullOrWhiteSpace(output))
                         str.AppendLine(output);
                 }
-
-                context.Trace.Information("idx " + idx + " == " + inputLength);
                 
                 _previousLevel = level;
 
@@ -208,9 +206,7 @@ namespace Wyam.Modules.Opml
                 {
                     while (levelCounter > 0)
                     {
-                        context.Trace.Information("Winding down at  " + levelCounter);
-
-                        var output2 = WindDownFormatter(null, null);
+                        var output2 = EndingFormatter(null, null);
                         if (!string.IsNullOrWhiteSpace(output2))
                             str.AppendLine(output2);
 
@@ -220,7 +216,6 @@ namespace Wyam.Modules.Opml
                     var output = DefaultEndFormatter(i.Content, i.Metadata);
                     if (!string.IsNullOrWhiteSpace(output))
                     {
-                        context.Trace.Information("Writing out at end " + output);
                         str.AppendLine(output);
                     }
                 }
@@ -230,8 +225,16 @@ namespace Wyam.Modules.Opml
 
             var result = str.ToString();
             var meta = new List<KeyValuePair<string, object>>();
-            var o = context.GetNewDocument(result, meta);
-            return new[] { o };
+
+            if (inputs.Any())
+            {
+                var source = inputs.First().Source;
+                var docWithSource = context.GetNewDocument(source, result, meta);
+                return new[] { docWithSource };
+            }
+
+            var docWithoutSource = context.GetNewDocument(result, meta);
+            return new[] { docWithoutSource };
         }
     }
 }

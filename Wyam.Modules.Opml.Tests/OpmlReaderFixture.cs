@@ -84,13 +84,13 @@ namespace Wyam.Modules.Opml.Tests
 
             document.Content.Returns(opmlDoc);
             document
-                .Clone(Arg.Any<string>(), Arg.Any<IEnumerable<KeyValuePair<string, object>>>())
+                .Clone(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<IEnumerable<KeyValuePair<string, object>>>())
                 .Returns(x =>
                 {
                     IDocument res = Substitute.For<IDocument>();
-                    res.Content.Returns((string)x[0]);
+                    res.Content.Returns((string)x[1]);
                     
-                    var metadata = (IEnumerable<KeyValuePair<string, object>>)x[1];
+                    var metadata = (IEnumerable<KeyValuePair<string, object>>)x[2];
                     res.Metadata.Count.Returns(metadata.Count());
 
                     res.Metadata[Arg.Any<string>()].Returns(m =>
