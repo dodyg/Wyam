@@ -8,19 +8,22 @@ using Wyam.Common.Modules;
 using Wyam.Common.Pipelines;
 using System.Text;
 using Formatter = System.Func<string, Wyam.Common.Documents.IMetadata, string>;
-
+using FormatterCondition = System.Func<Wyam.Modules.Opml.OutlineDirection, Wyam.Modules.Opml.OutlineStartOrEnd, Wyam.Common.Documents.IDocument, bool>;
 namespace Wyam.Modules.Opml
 {
     public enum OutlineDirection
     {
         Down,
-        Up
+        Up,
+        Level,
+        Start
     }
 
     public enum OutlineStartOrEnd
     {
         Start,
-        End
+        End,
+        None
     }
 
     public class OpmlTextRenderer : IModule
@@ -31,35 +34,14 @@ namespace Wyam.Modules.Opml
 
         Dictionary<int, Formatter> OnGoingDownFormatter = new Dictionary<int, Formatter>();
 
-        Formatter DefaultOnGoingDownFormatter = (content, metadata) =>
-        {
-            return "";
-        };
+        List<Tuple<FormatterCondition, Formatter>> ConditionalFormatter = new List<Tuple<FormatterCondition, Formatter>>();
 
-        Formatter DefaultOnGoingUpFormatter = (content, metadata) =>
-        {
-            return "";
-        };
-
-        Formatter DefaultStartFormatter = (content, metadata) =>
-        {
-            return "";
-        };
-
-        Formatter DefaultEndFormatter = (content, metadata) =>
-        {
-            return "";
-        };
-
-        Formatter EndingFormatter = (content, metadata) =>
-        {
-            return "";
-        };
-
-        Formatter DefaultFormatter = (content, metadata) =>
-        {
-            return content;
-        };
+        Formatter DefaultOnGoingDownFormatter = (content, metadata) => "";
+        Formatter DefaultOnGoingUpFormatter = (content, metadata) => "";
+        Formatter DefaultStartFormatter = (content, metadata) => "";
+        Formatter DefaultEndFormatter = (content, metadata) => "";
+        Formatter EndingFormatter = (content, metadata) => "";
+        Formatter DefaultFormatter = (content, metadata) => content;
 
         public OpmlTextRenderer SetFormatter(Formatter func)
         {
@@ -115,6 +97,13 @@ namespace Wyam.Modules.Opml
             return this;
         }
 
+        public OpmlTextRenderer SetConditional(FormatterCondition condition, Formatter func)
+        {
+            ConditionalFormatter.Add(Tuple.Create(condition, func));
+
+            return this;
+        }
+
         protected string FormatDirection(OutlineDirection direction, int level, string content, IMetadata metadata)
         {
             if (direction == OutlineDirection.Up)
@@ -144,65 +133,79 @@ namespace Wyam.Modules.Opml
 
         int? _previousLevel;
 
+        OutlineDirection GetDirection(int level)
+        {
+            if (_previousLevel.HasValue)
+            {
+                if (level < _previousLevel)
+                    return OutlineDirection.Up;
+                else if (level > _previousLevel)
+                    return OutlineDirection.Down;
+                else
+                    return OutlineDirection.Level;
+            }
+            return OutlineDirection.Start;
+        }
+
         public IEnumerable<IDocument> Execute(IReadOnlyList<IDocument> inputs, IExecutionContext context)
         {
             var str = new StringBuilder();
 
             var idx = 0;
-
             int levelCounter = 0;
-
             var inputLength = inputs.Count - 1;
 
-            foreach (var i in inputs)
+            foreach (var doc in inputs)
             {
-                var level = (int)i.Metadata[MetadataKeys.OutlineLevel];
+                var level = (int)doc.Metadata[MetadataKeys.OutlineLevel];
 
-                if (_previousLevel.HasValue)
+                var direction = GetDirection(level);
+
+                //direction based formatting
+                if (direction == OutlineDirection.Up)
                 {
-                    if (level < _previousLevel)
-                    {
-                        var output = FormatDirection(OutlineDirection.Up, level, i.Content, i.Metadata);
-                        if (!string.IsNullOrWhiteSpace(output))
-                            str.AppendLine(output);
+                    var output = FormatDirection(direction, level, doc.Content, doc.Metadata);
+                    if (!string.IsNullOrWhiteSpace(output))
+                        str.AppendLine(output);
 
-                        levelCounter--;
-                    }
-                    else if (level > _previousLevel)
-                    {
-                        var output = FormatDirection(OutlineDirection.Down, level, i.Content, i.Metadata);
-                        if (!string.IsNullOrWhiteSpace(output))
-                            str.AppendLine(output);
+                    levelCounter--;
+                }
+                else if (direction == OutlineDirection.Down)
+                {
+                    var output = FormatDirection(direction, level, doc.Content, doc.Metadata);
+                    if (!string.IsNullOrWhiteSpace(output))
+                        str.AppendLine(output);
 
-                        levelCounter++;
-                    }
+                    levelCounter++;
                 }
                 else
                 {
-                    var output = DefaultStartFormatter(i.Content, i.Metadata);
+                    var output = DefaultStartFormatter(doc.Content, doc.Metadata);
                     if (!string.IsNullOrWhiteSpace(output))
                         str.AppendLine(output);
                 }
-                
+
                 _previousLevel = level;
 
+                //level based formatting
                 if (Formatters.ContainsKey(level))
                 {
                     var render = Formatters[level];
-                    var output = render(i.Content, i.Metadata);
+                    var output = render(doc.Content, doc.Metadata);
                     if (!string.IsNullOrWhiteSpace(output))
                         str.AppendLine(output);
                 }
                 else
                 {
-                    var output = DefaultFormatter(i.Content, i.Metadata);
+                    var output = DefaultFormatter(doc.Content, doc.Metadata);
                     if (!string.IsNullOrWhiteSpace(output))
                         str.AppendLine(output);
                 }
 
-                var isEnd = idx == inputLength;
+                //start of end formatting
+                var startOrEnd = idx == 0 ? OutlineStartOrEnd.Start : (idx == inputLength) ? OutlineStartOrEnd.End : OutlineStartOrEnd.None;
 
-                if (isEnd)
+                if (startOrEnd == OutlineStartOrEnd.End)
                 {
                     while (levelCounter > 0)
                     {
@@ -213,11 +216,20 @@ namespace Wyam.Modules.Opml
                         levelCounter--;
                     }
 
-                    var output = DefaultEndFormatter(i.Content, i.Metadata);
+                    var output = DefaultEndFormatter(doc.Content, doc.Metadata);
                     if (!string.IsNullOrWhiteSpace(output))
                     {
                         str.AppendLine(output);
                     }
+                }
+
+                //conditional formatting
+                foreach(var c in ConditionalFormatter)
+                {
+                    var condition = c.Item1;
+                    var formatt = c.Item2;
+                    if (condition(direction, startOrEnd, doc))
+                        formatt(doc.Content, doc.Metadata);
                 }
 
                 idx++;
@@ -230,7 +242,8 @@ namespace Wyam.Modules.Opml
             {
                 var source = inputs.First().Source;
                 var docWithSource = context.GetNewDocument(source, result, meta);
-                return new[] { docWithSource };
+                return new[] { docWithSource
+    };
             }
 
             var docWithoutSource = context.GetNewDocument(result, meta);
