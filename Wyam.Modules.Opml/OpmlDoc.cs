@@ -78,6 +78,7 @@ namespace Wyam.Modules.Opml
 
                 Outlines.Add(o);
                 TraverseBody(b, o, ++level);
+                level--;
             }
         }
 

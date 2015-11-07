@@ -69,6 +69,10 @@ namespace Wyam.Modules.Opml.Tests
 
             var seventh = outlines[7];
             Assert.IsTrue(seventh.Level == 0, "seventh must be 0 level instead of " + seventh.Level);
+
+            var fourteenth = outlines[14];
+            Assert.IsTrue(seventh.Level == 0, "fourteenth must be 0 level instead of " + fourteenth.Level);
+
         }
 
         [Test]
