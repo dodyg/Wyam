@@ -101,6 +101,39 @@ namespace Wyam.Modules.Opml.Tests
             Assert.IsNotNullOrEmpty(outputResult, "Rendered output cannot be empty");
         }
 
+
+        [Test]
+        public async Task ImpressJsRenderer()
+        {
+            var opmlDoc = await DownloadUrl("https://dl.dropbox.com/s/2560de1875w4fda/presentation.opml?dl=0");
+
+            IDocument document = GetDocumentMock(opmlDoc);
+
+            var opml = new OpmlReader(level: 0);
+
+            var result = opml.Execute(new IDocument[] { document }, null).ToList();
+
+            Assert.Greater(result.Count, 0, "Must contains outlines");
+
+            var opmlRenderer = new OpmlTextRenderer()
+            .SetFormatter(0, (content, meta) => @"<div class=""step slide"">")
+            .SetFormatter(OutlineDirection.Up, 1, (content, meta) => "</div>")
+            .SetFormatter((content, meta) =>
+            {
+                return $"<p>{content}</p>";
+            });
+
+            IExecutionContext context = GetExecutionContext();
+
+            var result2 = opmlRenderer.Execute(result, context).ToList();
+
+            var outputResult = result2.First().Content;
+
+            Console.WriteLine("Output\n " + outputResult);
+            Assert.IsNotNullOrEmpty(outputResult, "Rendered output cannot be empty");
+        }
+
+
         IExecutionContext GetExecutionContext()
         {
             IExecutionContext context = Substitute.For<IExecutionContext>();
