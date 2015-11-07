@@ -70,6 +70,37 @@ namespace Wyam.Modules.Opml.Tests
             Assert.IsNotNullOrEmpty(outputResult, "Rendered output cannot be empty");
         }
 
+        [Test]
+        public async Task HtmlListRenderer()
+        {
+            var opmlDoc = await DownloadUrl("http://hosting.opml.org/dave/spec/placesLived.opml");
+
+            IDocument document = GetDocumentMock(opmlDoc);
+
+            var opml = new OpmlReader(level: 1);
+
+            var result = opml.Execute(new IDocument[] { document }, null).ToList();
+
+            Assert.Greater(result.Count, 0, "Must contains outlines");
+
+            var opmlRenderer = new OpmlTextRenderer()
+            .SetFormatter((content, meta) => $"  <li>{content}</li>")
+            .SetFormatter(OutlineDirection.Up, (content, meta) => "</ul>\n  </li>")
+            .SetFormatter(OutlineDirection.Down, (content, meta) => "<li>\n  <ul>")
+            .SetFormatter(OutlineStartOrEnd.Start, (content, meta) => "<ul>")
+            .SetFormatter(OutlineStartOrEnd.End, (content, meta) => "</ul><!-- end -->")
+            .SetEndingString("</ul></li>");
+
+            IExecutionContext context = GetExecutionContext();
+
+            var result2 = opmlRenderer.Execute(result, context).ToList();
+
+            var outputResult = result2.First().Content;
+
+            Console.WriteLine("Output\n " + outputResult);
+            Assert.IsNotNullOrEmpty(outputResult, "Rendered output cannot be empty");
+        }
+
         IExecutionContext GetExecutionContext()
         {
             IExecutionContext context = Substitute.For<IExecutionContext>();
