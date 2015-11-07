@@ -16,7 +16,7 @@ namespace Wyam.Modules.Opml
         Down,
         Up,
         Level,
-        Start
+        None
     }
 
     public enum OutlineStartOrEnd
@@ -76,16 +76,16 @@ namespace Wyam.Modules.Opml
             return this;
         }
 
-        public OpmlTextRenderer SetEndingString(string end)
+        public OpmlTextRenderer SetFormatter(FormatterCondition condition, Formatter func)
         {
-            EndingFormatter = (content, metadata) => end;
+            ConditionalFormatter.Add(Tuple.Create(condition, func));
 
             return this;
         }
 
-        public OpmlTextRenderer SetConditional(FormatterCondition condition, Formatter func)
+        public OpmlTextRenderer SetEndingString(string end)
         {
-            ConditionalFormatter.Add(Tuple.Create(condition, func));
+            EndingFormatter = (content, metadata) => end;
 
             return this;
         }
@@ -103,7 +103,7 @@ namespace Wyam.Modules.Opml
                 else
                     return OutlineDirection.Level;
             }
-            return OutlineDirection.Start;
+            return OutlineDirection.None;
         }
 
         public IEnumerable<IDocument> Execute(IReadOnlyList<IDocument> inputs, IExecutionContext context)
@@ -124,6 +124,14 @@ namespace Wyam.Modules.Opml
                 var startOrEnd = idx == 0 ? OutlineStartOrEnd.Start : (idx == inputLength) ? OutlineStartOrEnd.End : OutlineStartOrEnd.None;
                 idx++;
 
+                //direction based formatting
+                if (startOrEnd == OutlineStartOrEnd.Start)
+                {
+                    var output = DefaultStartFormatter(doc.Content, doc.Metadata);
+                    if (!string.IsNullOrWhiteSpace(output))
+                        str.AppendLine(output);
+                }
+
                 bool anyMatch = false;
                 //conditional formatting
                 foreach (var c in ConditionalFormatter)
@@ -139,14 +147,7 @@ namespace Wyam.Modules.Opml
                     }
                 }
 
-                //direction based formatting
-                if (direction == OutlineDirection.Start)
-                {
-                    var output = DefaultStartFormatter(doc.Content, doc.Metadata);
-                    if (!string.IsNullOrWhiteSpace(output))
-                        str.AppendLine(output);
-                }
-
+                //none of the formatting condition works out
                 if (!anyMatch)
                 {
                     var output = DefaultFormatter(doc.Content, doc.Metadata);
