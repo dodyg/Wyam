@@ -62,6 +62,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Wyam.Modules.Git.Tests", "W
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Wyam.Modules.Markdown.Tests", "Wyam.Modules.Markdown.Tests\Wyam.Modules.Markdown.Tests.csproj", "{2392BE38-2D56-4F72-8659-A3435FB1EC86}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Wyam.Modules.Opml.Tests", "Wyam.Modules.Opml.Tests\Wyam.Modules.Opml.Tests.csproj", "{6F3632FB-2550-443A-9992-E47088C08970}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -180,6 +182,10 @@ Global
 		{2392BE38-2D56-4F72-8659-A3435FB1EC86}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{2392BE38-2D56-4F72-8659-A3435FB1EC86}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{2392BE38-2D56-4F72-8659-A3435FB1EC86}.Release|Any CPU.Build.0 = Release|Any CPU
+		{6F3632FB-2550-443A-9992-E47088C08970}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6F3632FB-2550-443A-9992-E47088C08970}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6F3632FB-2550-443A-9992-E47088C08970}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6F3632FB-2550-443A-9992-E47088C08970}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

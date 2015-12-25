@@ -11,6 +11,9 @@ using Wyam.Common.Pipelines;
 
 namespace Wyam.Modules.Opml
 {
+    /// <summary>
+    /// Read an OPML document and generate each outline as documents.
+    /// </summary>
     public class OpmlReader : IModule
     {
         OpmlDoc _doc = new OpmlDoc();
@@ -22,6 +25,10 @@ namespace Wyam.Modules.Opml
 
         }
 
+        /// <summary>
+        /// Specify the level of which outlines will be processed. By default it is set at level 0 (root outlines).
+        /// </summary>
+        /// <param name="level"></param>
         public OpmlReader(int level)
         {
             _levelFilter = level;

@@ -2,11 +2,9 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 using Wyam.Common.Documents;
 using Wyam.Common.Modules;
 using Wyam.Common.Pipelines;
-using System.Text;
 using Formatter = System.Func<string, Wyam.Common.Meta.IMetadata, string>;
 using FormatterCondition = System.Func<int, Wyam.Modules.Opml.OutlineDirection, Wyam.Modules.Opml.OutlineStartOrEnd, Wyam.Common.Documents.IDocument, bool>;
 namespace Wyam.Modules.Opml
@@ -26,6 +24,9 @@ namespace Wyam.Modules.Opml
         None
     }
 
+    /// <summary>
+    /// Take documents generated from OPML document and generate text output accordingly.
+    /// </summary>
     public class OpmlTextRenderer : IModule
     {
         List<Tuple<FormatterCondition, Formatter>> ConditionalFormatter = new List<Tuple<FormatterCondition, Formatter>>();
