@@ -7,7 +7,7 @@ using Wyam.Common.Documents;
 using Wyam.Common.Modules;
 using Wyam.Common.Pipelines;
 using System.Text;
-using Formatter = System.Func<string, Wyam.Common.Documents.IMetadata, string>;
+using Formatter = System.Func<string, Wyam.Common.Meta.IMetadata, string>;
 using FormatterCondition = System.Func<int, Wyam.Modules.Opml.OutlineDirection, Wyam.Modules.Opml.OutlineStartOrEnd, Wyam.Common.Documents.IDocument, bool>;
 namespace Wyam.Modules.Opml
 {
