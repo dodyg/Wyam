@@ -65,10 +65,10 @@ namespace Wyam.Modules.Opml.Tests
 
             IDocument document = GetDocumentMock(opmlDoc);
 
-            var opml = new OpmlReader(level: 1);
+            var opml = new OpmlReader(level: 0);
 
             var result = opml.Execute(new IDocument[] { document }, null).ToList();
-
+    
             Assert.Greater(result.Count, 0, "Must contains outlines");
             foreach (var x in result)
             {

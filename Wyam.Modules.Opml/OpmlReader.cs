@@ -48,7 +48,9 @@ namespace Wyam.Modules.Opml
                     var level = new KeyValuePair<string, object>(MetadataKeys.OutlineLevel, o.Level);
                     var metadata = o.Attributes.Select(x => new KeyValuePair<string, object>(x.Key, x.Value)).ToList();
                     metadata.Add(level);
-                    return input.Clone(source: input.Source, content: o.Text, items: metadata);
+
+                    var clone = input.Clone(source: input.Source, content: o.Text, items: metadata);
+                    return clone;
                 });
 
                 return results;
