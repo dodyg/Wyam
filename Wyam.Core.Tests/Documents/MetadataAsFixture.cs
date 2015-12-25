@@ -7,12 +7,14 @@ using System.Threading.Tasks;
 using NUnit.Framework;
 using Wyam.Common;
 using Wyam.Common.Documents;
+using Wyam.Common.Meta;
 using Wyam.Core.Documents;
-using Metadata = Wyam.Core.Documents.Metadata;
+using Wyam.Core.Meta;
 
 namespace Wyam.Core.Tests.Documents
 {
     [TestFixture]
+    [Parallelizable(ParallelScope.Self | ParallelScope.Children)]
     public class MetadataAsFixture
     {
         [Test]

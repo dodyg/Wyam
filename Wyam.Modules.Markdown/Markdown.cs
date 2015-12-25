@@ -11,8 +11,30 @@ using Wyam.Common.Pipelines;
 
 namespace Wyam.Modules.Markdown
 {
+    /// <summary>
+    /// Parses markdown content and renders it to HTML.
+    /// </summary>
+    /// <remarks>
+    /// Parses markdown content in each input document and outputs documents with rendered HTML content.
+    /// </remarks>
+    /// <category>Templates</category>
     public class Markdown : IModule
     {
+        private bool _escapeAt = true;
+
+        /// <summary>
+        /// Specifies whether the <c>@</c> symbol should be escaped (the default is <c>true</c>).
+        /// This is important if the Markdown documents are going to be passed to the Razor module,
+        /// otherwise the Razor processor will interpret the unescaped <c>@</c> symbols as code
+        /// directives.
+        /// </summary>
+        /// <param name="escapeAt">If set to <c>true</c>, <c>@</c> symbols are HTML escaped.</param>
+        public Markdown EscapeAt(bool escapeAt = true)
+        {
+            _escapeAt = escapeAt;
+            return this;
+        }
+
         public IEnumerable<IDocument> Execute(IReadOnlyList<IDocument> inputs, IExecutionContext context)
         {
             return inputs.AsParallel().Select(x =>
@@ -23,6 +45,10 @@ namespace Wyam.Modules.Markdown
                 if (!executionCache.TryGetValue<string>(x, out result))
                 {
                     result = CommonMark.CommonMarkConverter.Convert(x.Content);
+                    if (_escapeAt)
+                    {
+                        result = result.Replace("@", "&#64;");
+                    }
                     executionCache.Set(x, result);
                 }
                 return x.Clone(result);

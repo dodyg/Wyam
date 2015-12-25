@@ -10,8 +10,11 @@ using NUnit.Framework;
 using Wyam.Common;
 using Wyam.Common.Documents;
 using Wyam.Common.Pipelines;
+using Wyam.Common.Tracing;
 using Wyam.Core;
 using Wyam.Core.Modules;
+using Wyam.Core.Modules.IO;
+using Wyam.Core.Modules.Metadata;
 
 namespace Wyam.Modules.Razor.Tests
 {
@@ -22,13 +25,13 @@ namespace Wyam.Modules.Razor.Tests
         public void SimpleTemplate()
         {
             // Given
-            string inputFolder = Path.Combine(Environment.CurrentDirectory, @".\Input");
+            string inputFolder = Path.Combine(TestContext.CurrentContext.TestDirectory, @".\Input");
             if (!Directory.Exists(inputFolder))
             {
                 Directory.CreateDirectory(inputFolder);
             }
             IExecutionContext context = Substitute.For<IExecutionContext>();
-            context.RootFolder.Returns(Environment.CurrentDirectory);
+            context.RootFolder.Returns(TestContext.CurrentContext.TestDirectory);
             context.InputFolder.Returns(inputFolder);
             Engine engine = new Engine();
             engine.Configure();
@@ -46,16 +49,45 @@ namespace Wyam.Modules.Razor.Tests
         }
 
         [Test]
+        public void Tracing()
+        {
+            // Given
+            string inputFolder = Path.Combine(TestContext.CurrentContext.TestDirectory, @".\Input");
+            if (!Directory.Exists(inputFolder))
+            {
+                Directory.CreateDirectory(inputFolder);
+            }
+            ITrace trace = Substitute.For<ITrace>();
+            IExecutionContext context = Substitute.For<IExecutionContext>();
+            context.RootFolder.Returns(TestContext.CurrentContext.TestDirectory);
+            context.InputFolder.Returns(inputFolder);
+            context.Trace.Returns(trace);
+            Engine engine = new Engine();
+            engine.Configure();
+            context.Assemblies.Returns(engine.Assemblies);
+            IDocument document = Substitute.For<IDocument>();
+            document.GetStream().Returns(new MemoryStream(Encoding.UTF8.GetBytes(@"@{ ExecutionContext.Trace.Information(""Test""); }")));
+            Razor razor = new Razor();
+
+            // When
+            razor.Execute(new[] { document }, context).ToList();  // Make sure to materialize the result list
+
+            // Then
+            ITrace receivedTrace = context.Received().Trace; // Need to assign to dummy var to keep compiler happy
+            trace.Received().Information("Test");
+        }
+
+        [Test]
         public void Metadata()
         {
             // Given
-            string inputFolder = Path.Combine(Environment.CurrentDirectory, @".\Input");
+            string inputFolder = Path.Combine(TestContext.CurrentContext.TestDirectory, @".\Input");
             if (!Directory.Exists(inputFolder))
             {
                 Directory.CreateDirectory(inputFolder);
             }
             IExecutionContext context = Substitute.For<IExecutionContext>();
-            context.RootFolder.Returns(Environment.CurrentDirectory);
+            context.RootFolder.Returns(TestContext.CurrentContext.TestDirectory);
             context.InputFolder.Returns(inputFolder);
             Engine engine = new Engine();
             engine.Configure();
@@ -78,6 +110,7 @@ namespace Wyam.Modules.Razor.Tests
         {
             // Given
             Engine engine = new Engine();
+            engine.RootFolder = TestContext.CurrentContext.TestDirectory;
             engine.InputFolder = @"TestFiles\Input\";
             ReadFiles readFiles = new ReadFiles(@"SimpleTemplate\Test.cshtml");
             Razor razor = new Razor();
@@ -97,6 +130,7 @@ namespace Wyam.Modules.Razor.Tests
         {
             // Given
             Engine engine = new Engine();
+            engine.RootFolder = TestContext.CurrentContext.TestDirectory;
             engine.InputFolder = @"TestFiles\Input\";
             ReadFiles readFiles = new ReadFiles(@"Layout\Test.cshtml");
             Razor razor = new Razor();
@@ -116,6 +150,7 @@ namespace Wyam.Modules.Razor.Tests
         {
             // Given
             Engine engine = new Engine();
+            engine.RootFolder = TestContext.CurrentContext.TestDirectory;
             engine.InputFolder = @"TestFiles\Input\";
             ReadFiles readFiles = new ReadFiles(@"ViewStartAndLayout\Test.cshtml");
             Razor razor = new Razor();
@@ -135,6 +170,7 @@ namespace Wyam.Modules.Razor.Tests
         {
             // Given
             Engine engine = new Engine();
+            engine.RootFolder = TestContext.CurrentContext.TestDirectory;
             engine.InputFolder = @"TestFiles\Input\";
             ReadFiles readFiles = new ReadFiles(@"AlternateViewStartPath\Test.cshtml");
             Razor razor = new Razor().WithViewStart(@"AlternateViewStart\_ViewStart.cshtml");
@@ -154,6 +190,7 @@ namespace Wyam.Modules.Razor.Tests
         {
             // Given
             Engine engine = new Engine();
+            engine.RootFolder = TestContext.CurrentContext.TestDirectory;
             engine.InputFolder = @"TestFiles\Input\";
             ReadFiles readFiles = new ReadFiles(@"IgnoreUnderscores\*.cshtml");
             Razor razor = new Razor();
@@ -173,6 +210,7 @@ namespace Wyam.Modules.Razor.Tests
         {
             // Given
             Engine engine = new Engine();
+            engine.RootFolder = TestContext.CurrentContext.TestDirectory;
             engine.InputFolder = @"TestFiles\Input\";
             ReadFiles readFiles = new ReadFiles(@"AlternateIgnorePrefix\*.cshtml");
             Razor razor = new Razor().IgnorePrefix("Ignore");
@@ -192,6 +230,7 @@ namespace Wyam.Modules.Razor.Tests
         {
             // Given
             Engine engine = new Engine();
+            engine.RootFolder = TestContext.CurrentContext.TestDirectory;
             engine.InputFolder = @"TestFiles\Input\";
             ReadFiles readFiles = new ReadFiles(@"LayoutWithSection\Test.cshtml");
             Razor razor = new Razor();
@@ -211,6 +250,7 @@ namespace Wyam.Modules.Razor.Tests
         {
             // Given
             Engine engine = new Engine();
+            engine.RootFolder = TestContext.CurrentContext.TestDirectory;
             engine.InputFolder = @"TestFiles\Input\";
             ReadFiles readFiles = new ReadFiles(@"LayoutWithSection\Test.cshtml");
             Razor razor = new Razor();

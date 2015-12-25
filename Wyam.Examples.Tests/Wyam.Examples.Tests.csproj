@@ -31,8 +31,8 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="nunit.framework, Version=2.6.4.14350, Culture=neutral, PublicKeyToken=96d09a1eb7f44a77, processorArchitecture=MSIL">
-      <HintPath>..\packages\NUnit.2.6.4\lib\nunit.framework.dll</HintPath>
+    <Reference Include="nunit.framework, Version=3.0.5813.39031, Culture=neutral, PublicKeyToken=2638cd05610744eb, processorArchitecture=MSIL">
+      <HintPath>..\packages\NUnit.3.0.1\lib\net45\nunit.framework.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="System" />
@@ -49,9 +49,6 @@
     <Compile Include="TestTraceListener.cs" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="packages.config" />
-  </ItemGroup>
-  <ItemGroup>
     <ProjectReference Include="..\Wyam.Common\Wyam.Common.csproj">
       <Project>{f40b73e9-c0cc-465c-925e-b51e686c1d5c}</Project>
       <Name>Wyam.Common</Name>
@@ -59,6 +56,10 @@
     <ProjectReference Include="..\Wyam.Core\Wyam.Core.csproj">
       <Project>{bc8c5de2-6692-4e39-a0bb-689c316aeff1}</Project>
       <Name>Wyam.Core</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Wyam.Modules.CodeAnalysis\Wyam.Modules.CodeAnalysis.csproj">
+      <Project>{f4c0c025-5e08-4ed2-a089-67c41702ae7b}</Project>
+      <Name>Wyam.Modules.CodeAnalysis</Name>
     </ProjectReference>
     <ProjectReference Include="..\Wyam.Modules.Html\Wyam.Modules.Html.csproj">
       <Project>{68085ee3-bb21-4e52-9a86-dd1820a0d010}</Project>
@@ -80,6 +81,10 @@
       <Project>{d044419d-363a-47cc-a4ed-466a6128d7a2}</Project>
       <Name>Wyam.Modules.Razor</Name>
     </ProjectReference>
+    <ProjectReference Include="..\Wyam.Modules.SearchIndex\Wyam.Modules.SearchIndex.csproj">
+      <Project>{957fe3a0-7ce0-48a1-9767-d122b9f43907}</Project>
+      <Name>Wyam.Modules.SearchIndex</Name>
+    </ProjectReference>
     <ProjectReference Include="..\Wyam.Modules.TextGeneration\Wyam.Modules.TextGeneration.csproj">
       <Project>{0d7f4902-c048-46aa-bdd1-b87b657003ff}</Project>
       <Name>Wyam.Modules.TextGeneration</Name>
@@ -91,6 +96,9 @@
   </ItemGroup>
   <ItemGroup>
     <Service Include="{82A7F48D-3B50-4B1E-B82E-3ADA8210C358}" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="packages.config" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

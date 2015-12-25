@@ -61,6 +61,7 @@ namespace Wyam.Core.Configuration
 
             // Manually resolve included assemblies
             AppDomain.CurrentDomain.AssemblyResolve += ResolveAssembly;
+            AppDomain.CurrentDomain.SetupInformation.PrivateBinPathProbe = string.Empty; // non-null means exclude application base path
         }
 
         public void Dispose()
@@ -97,6 +98,7 @@ namespace Wyam.Core.Configuration
             // If no script, nothing else to do
             if (string.IsNullOrWhiteSpace(script))
             {
+                Config(null,null);
                 return;
             }
 
@@ -213,6 +215,17 @@ namespace Wyam.Core.Configuration
             }
         }
 
+        private static readonly string[] _defaultNamespaces = new[]
+        {
+            "System",
+            "System.Collections.Generic",
+            "System.Linq",
+            "System.IO",
+            "System.Diagnostics",
+            "Wyam.Core",
+            "Wyam.Core.Configuration"
+        };
+
         private void Config(string declarations, string code)
         {
             try
@@ -221,23 +234,17 @@ namespace Wyam.Core.Configuration
                 using (_engine.Trace.WithIndent().Verbose("Initializing scripting environment"))
                 {
                     // Initial default namespaces
-                    _namespaces.AddRange(new []
-                    {
-                        "System",
-                        "System.Collections.Generic",
-                        "System.Linq",
-                        "System.IO",
-                        "System.Diagnostics",
-                        "Wyam.Core",
-                        "Wyam.Core.Configuration",
-                        "Wyam.Core.Modules"
-                    });
+                    _namespaces.AddRange(_defaultNamespaces);
+
+                    // Add all module namespaces from Wyam.Core
+                    _namespaces.AddRange(typeof (Engine).Assembly.GetTypes()
+                        .Where(x => typeof(IModule).IsAssignableFrom(x))
+                        .Select(x => x.Namespace));
 
                     // Also include all Wyam.Common namespaces
                     _namespaces.AddRange(typeof (IModule).Assembly.GetTypes()
                         .Where(x => !string.IsNullOrWhiteSpace(x.Namespace))
-                        .Select(x => x.Namespace)
-                        .Distinct());
+                        .Select(x => x.Namespace));
 
                     // Add specified assemblies from packages, etc.
                     GetAssemblies();
@@ -246,19 +253,23 @@ namespace Wyam.Core.Configuration
                     moduleTypes = GetModules();
                 }
 
-                using (_engine.Trace.WithIndent().Verbose("Evaluating configuration script"))
+                if (!string.IsNullOrWhiteSpace(declarations)
+                    && !string.IsNullOrWhiteSpace(code))
                 {
+                    using (_engine.Trace.WithIndent().Verbose("Evaluating configuration script"))
+                    {
 
-                    // Generate the script
-                    code = GenerateScript(declarations, code, moduleTypes);
+                        // Generate the script
+                        code = GenerateScript(declarations, code, moduleTypes);
 
-                    // Load the dynamic assembly and invoke
-                    _rawSetupAssembly = CompileScript("WyamConfig", _assemblies.Values, code, _engine.Trace);
-                    _setupAssembly = Assembly.Load(_rawSetupAssembly);
-                    _configAssemblyFullName = _setupAssembly.FullName;
-                    var configScriptType = _setupAssembly.GetExportedTypes().First(t => t.Name == "ConfigScript");
-                    MethodInfo runMethod = configScriptType.GetMethod("Run", BindingFlags.Public | BindingFlags.Static);
-                    runMethod.Invoke(null, new object[] { _engine.Metadata, _engine.Pipelines, _engine.RootFolder, _engine.InputFolder, _engine.OutputFolder });
+                        // Load the dynamic assembly and invoke
+                        _rawSetupAssembly = CompileScript("WyamConfig", _assemblies.Values, code, _engine.Trace);
+                        _setupAssembly = Assembly.Load(_rawSetupAssembly);
+                        _configAssemblyFullName = _setupAssembly.FullName;
+                        var configScriptType = _setupAssembly.GetExportedTypes().First(t => t.Name == "ConfigScript");
+                        MethodInfo runMethod = configScriptType.GetMethod("Run", BindingFlags.Public | BindingFlags.Static);
+                        runMethod.Invoke(null, new object[] { _engine.Metadata, _engine.Pipelines, _engine.RootFolder, _engine.InputFolder, _engine.OutputFolder });
+                    }
                 }
             }
             catch (Exception ex)
@@ -332,13 +343,21 @@ namespace Wyam.Core.Configuration
                 .Select(x => new Tuple<string, string>(x, Path.Combine(_engine.RootFolder, x)))
                 .Select(x => File.Exists(x.Item2) ? x.Item2 : x.Item1));
 
+            // Add all paths to the PrivateBinPath search location (to ensure they load in the default context)
+            AppDomain.CurrentDomain.SetupInformation.PrivateBinPath =
+                string.Join(";", new[] {AppDomain.CurrentDomain.SetupInformation.PrivateBinPath}
+                    .Concat(assemblyPaths.Select(x => Path.GetDirectoryName(x).Distinct())));
+            
             // Iterate assemblies by path (making sure to add them to the current path if relative), add them to the script, and check for modules
+            // If this approach causes problems, could also try loading assemblies in custom app domain:
+            // http://stackoverflow.com/questions/6626647/custom-appdomain-and-privatebinpath
             foreach (string assemblyPath in assemblyPaths.Distinct())
             {
                 try
                 {
                     _engine.Trace.Verbose("Loading assembly file {0}", assemblyPath);
-                    Assembly assembly = Assembly.LoadFrom(assemblyPath);
+                    AssemblyName assemblyName = AssemblyName.GetAssemblyName(assemblyPath);
+                    Assembly assembly = Assembly.Load(assemblyName);
                     if (!AddAssembly(assembly))
                     {
                         _engine.Trace.Verbose("Skipping assembly file {0} because it was already added", assemblyPath);

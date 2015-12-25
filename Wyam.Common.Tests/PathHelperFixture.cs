@@ -11,6 +11,7 @@ using Wyam.Common.IO;
 namespace Wyam.Common.Tests
 {
     [TestFixture]
+    [Parallelizable(ParallelScope.Self | ParallelScope.Children)]
     public class PathHelperFixture
     {
         [TestCase(@"C:\A\B\", @"C:\A\B\", @"")]
@@ -23,6 +24,21 @@ namespace Wyam.Common.Tests
 
             // When
             string calculatedPath = PathHelper.GetRelativePath(fromPath, toPath);
+
+            // Then
+            Assert.AreEqual(expectedPath, calculatedPath);
+        }
+
+        [TestCase(@"C:\A\B\", @"..\*.txt", @"C:\A\*.txt")]
+        [TestCase(@"C:\A\B\", @".\*.txt", @"C:\A\B\*.txt")]
+        [TestCase(@"C:\A\B\", @"*.*", @"C:\A\B\*.*")]
+        [TestCase(@"C:\A\B\", @"..\..\*.txt", @"C:\*.txt")]
+        public void GetCombinedFullPath(string path1, string path2, string expectedPath)
+        {
+            // Given
+
+            // When
+            string calculatedPath = PathHelper.CombineToFullPath(path1, path2);
 
             // Then
             Assert.AreEqual(expectedPath, calculatedPath);
