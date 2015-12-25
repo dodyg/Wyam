@@ -117,7 +117,7 @@ namespace Wyam.Modules.Opml.Tests
 
             var opmlRenderer = new OpmlTextRenderer()
             .SetFormatter(0, (content, meta) => @"<div class=""step slide"">")
-            .SetFormatter(OutlineDirection.Up, 1, (content, meta) => "</div>")
+            .SetFormatter(OutlineDirection.Up, 0, (content, meta) => "</div>")
             .SetFormatter((content, meta) =>
             {
                 return $"<p>{content}</p>";
