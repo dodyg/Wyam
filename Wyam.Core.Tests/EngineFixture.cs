@@ -7,6 +7,8 @@ using System.Text;
 using System.Threading.Tasks;
 using Wyam.Core;
 using Wyam.Core.Modules;
+using Wyam.Core.Modules.Extensibility;
+using Wyam.Core.Modules.Metadata;
 using Wyam.Core.Pipelines;
 
 
@@ -163,7 +165,7 @@ namespace Wyam.Core.Tests
                 {
                     x.Clone((c++).ToString())
                 }),
-                new Meta("Content", (x, y) => x.Content));
+                new Core.Modules.Metadata.Meta("Content", (x, y) => x.Content));
 
             // When
             engine.Execute();

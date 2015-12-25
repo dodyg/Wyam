@@ -46,7 +46,7 @@ namespace Wyam.Modules.Html.Tests
             htmlEscape.Execute(new[] { document }, context).ToList();  // Make sure to materialize the result list
 
             // Then
-            document.DidNotReceiveWithAnyArgs().Clone(null);
+            document.DidNotReceiveWithAnyArgs().Clone((string)null);
             stream.Dispose();
         }
 
@@ -161,7 +161,7 @@ namespace Wyam.Modules.Html.Tests
                     x[1] = x[0];
                     return true;
                 });
-            HtmlEscape htmlEscape = new HtmlEscape().WithEscapeAllNonstandard().WithDefaultStandard();
+            HtmlEscape htmlEscape = new HtmlEscape().EscapeAllNonstandard().WithDefaultStandard();
 
             // When
             htmlEscape.Execute(new[] { document }, context).ToList();  // Make sure to materialize the result list

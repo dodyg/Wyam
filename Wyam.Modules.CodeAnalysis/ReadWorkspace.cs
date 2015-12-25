@@ -10,6 +10,7 @@ using Microsoft.CodeAnalysis.Text;
 using Wyam.Common.Configuration;
 using Wyam.Common.Documents;
 using Wyam.Common.IO;
+using Wyam.Common.Meta;
 using Wyam.Common.Modules;
 using Wyam.Common.Pipelines;
 
@@ -48,8 +49,11 @@ namespace Wyam.Modules.CodeAnalysis
             }
             _path = new ConfigHelper<string>(path);
         }
-
-        // Filters the projects based on name
+        
+        /// <summary>
+        /// Filters the project based on name.
+        /// </summary>
+        /// <param name="predicate">A predicate that should return <c>true</c> if the project should be included.</param>
         public ReadWorkspace WhereProject(Func<string, bool> predicate)
         {
             Func<string, bool> currentPredicate = _whereProject;
@@ -57,18 +61,24 @@ namespace Wyam.Modules.CodeAnalysis
             return this;
         }
 
-        // Filters the files based on path
+        /// <summary>
+        /// Filters the source code file based on path.
+        /// </summary>
+        /// <param name="predicate">A predicate that should return <c>true</c> if the source code file should be included.</param>
         public ReadWorkspace WhereFile(Func<string, bool> predicate)
         {
             Func<string, bool> currentPredicate = _whereFile;
             _whereFile = currentPredicate == null ? predicate : x => currentPredicate(x) && predicate(x);
             return this;
         }
-
-        // Filters the files based on extension
+        
+        /// <summary>
+        /// Filters the source code files based on extension.
+        /// </summary>
+        /// <param name="extensions">The extensions to include (if defined, any extensions not listed will be excluded).</param>
         public ReadWorkspace WithExtensions(params string[] extensions)
         {
-            _extensions = _extensions?.Concat(extensions.Select(x => x.StartsWith(".") ? x : "." + x)).ToArray() 
+            _extensions = _extensions?.Concat(extensions.Select(x => x.StartsWith(".") ? x : "." + x)).ToArray()
                 ?? extensions.Select(x => x.StartsWith(".") ? x : "." + x).ToArray();
             return this;
         }
@@ -97,16 +107,16 @@ namespace Wyam.Modules.CodeAnalysis
                                     context.Trace.Verbose("Read file {0}", document.FilePath);
                                     return context.GetNewDocument(document.FilePath, File.OpenRead(document.FilePath), new Dictionary<string, object>
                                     {
-                                        {"SourceFileRoot", Path.GetDirectoryName(document.FilePath)},
-                                        {"SourceFileBase", Path.GetFileNameWithoutExtension(document.FilePath)},
-                                        {"SourceFileExt", Path.GetExtension(document.FilePath)},
-                                        {"SourceFileName", Path.GetFileName(document.FilePath)},
-                                        {"SourceFileDir", Path.GetDirectoryName(document.FilePath)},
-                                        {"SourceFilePath", document.FilePath},
-                                        {"SourceFilePathBase", PathHelper.RemoveExtension(document.FilePath)},
-                                        {"RelativeFilePath", PathHelper.GetRelativePath(path, document.FilePath)},
-                                        {"RelativeFilePathBase", PathHelper.RemoveExtension(PathHelper.GetRelativePath(path, document.FilePath))},
-                                        {"RelativeFileDir", Path.GetDirectoryName(PathHelper.GetRelativePath(path, document.FilePath))}
+                                        {Keys.SourceFileRoot, Path.GetDirectoryName(document.FilePath)},
+                                        {Keys.SourceFileBase, Path.GetFileNameWithoutExtension(document.FilePath)},
+                                        {Keys.SourceFileExt, Path.GetExtension(document.FilePath)},
+                                        {Keys.SourceFileName, Path.GetFileName(document.FilePath)},
+                                        {Keys.SourceFileDir, Path.GetDirectoryName(document.FilePath)},
+                                        {Keys.SourceFilePath, document.FilePath},
+                                        {Keys.SourceFilePathBase, PathHelper.RemoveExtension(document.FilePath)},
+                                        {Keys.RelativeFilePath, PathHelper.GetRelativePath(path, document.FilePath)},
+                                        {Keys.RelativeFilePathBase, PathHelper.RemoveExtension(PathHelper.GetRelativePath(path, document.FilePath))},
+                                        {Keys.RelativeFileDir, Path.GetDirectoryName(PathHelper.GetRelativePath(path, document.FilePath))}
                                     });
                                 });
                         });
