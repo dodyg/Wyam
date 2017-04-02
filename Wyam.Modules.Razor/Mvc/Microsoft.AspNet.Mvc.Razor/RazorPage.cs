@@ -10,8 +10,11 @@ using System.Net;
 using System.Security.Claims;
 using System.Threading.Tasks;
 using System.Web;
-using Microsoft.CodeAnalysis;
-using Wyam.Abstractions;
+using Wyam.Modules.Razor.Microsoft.AspNet.Html.Abstractions;
+using Wyam.Common;
+using Wyam.Common.Documents;
+using Wyam.Common.Meta;
+using Wyam.Common.Pipelines;
 using Wyam.Modules.Razor.Microsoft.Framework.Internal;
 using HtmlString = Wyam.Modules.Razor.Microsoft.AspNet.Mvc.Rendering.HtmlString;
 
@@ -125,8 +128,8 @@ namespace Wyam.Modules.Razor.Microsoft.AspNet.Mvc.Razor
         /// <param name="writer">The <see cref="TextWriter"/> instance to write to.</param>
         /// <param name="value">The <see cref="object"/> to write.</param>
         /// <remarks>
-        /// <paramref name="value"/>s of type <see cref="Rendering.HtmlString"/> are written without encoding and the
-        /// <see cref="HelperResult.WriteTo(TextWriter)"/> is invoked for <see cref="HelperResult"/> types.
+        /// <paramref name="value"/>s of type <see cref="IHtmlContent"/> are written using 
+        /// <see cref="IHtmlContent.WriteTo(TextWriter, IHtmlEncoder)"/>.
         /// For all other types, the encoded result of <see cref="object.ToString"/> is written to the
         /// <paramref name="writer"/>.
         /// </remarks>
@@ -142,12 +145,12 @@ namespace Wyam.Modules.Razor.Microsoft.AspNet.Mvc.Razor
         /// <param name="encoder">The <see cref="IHtmlEncoder"/> to use when encoding <paramref name="value"/>.</param>
         /// <param name="value">The <see cref="object"/> to write.</param>
         /// <param name="escapeQuotes">
-        /// If <c>true</c> escapes double quotes in a <paramref name="value"/> of type <see cref="Rendering.HtmlString"/>.
-        /// Otherwise writes <see cref="Rendering.HtmlString"/> values as-is.
+        /// If <c>true</c> escapes double quotes in a <paramref name="value"/> of type <see cref="HtmlString"/>.
+        /// Otherwise writes <see cref="HtmlString"/> values as-is.
         /// </param>
         /// <remarks>
-        /// <paramref name="value"/>s of type <see cref="Rendering.HtmlString"/> are written without encoding and the
-        /// <see cref="HelperResult.WriteTo(TextWriter)"/> is invoked for <see cref="HelperResult"/> types.
+        /// <paramref name="value"/>s of type <see cref="IHtmlContent"/> are written using 
+        /// <see cref="IHtmlContent.WriteTo(TextWriter, IHtmlEncoder)"/>.
         /// For all other types, the encoded result of <see cref="object.ToString"/> is written to the
         /// <paramref name="writer"/>.
         /// </remarks>
@@ -161,6 +164,7 @@ namespace Wyam.Modules.Razor.Microsoft.AspNet.Mvc.Razor
                 return;
             }
 
+            // Wyam - check for HelperResult
             var helperResult = value as HelperResult;
             if (helperResult != null)
             {
@@ -168,8 +172,8 @@ namespace Wyam.Modules.Razor.Microsoft.AspNet.Mvc.Razor
                 return;
             }
 
-            var htmlString = value as HtmlString;
-            if (htmlString != null)
+            var htmlContent = value as IHtmlContent;
+            if (htmlContent != null)
             {
                 if (escapeQuotes)
                 {
@@ -177,9 +181,9 @@ namespace Wyam.Modules.Razor.Microsoft.AspNet.Mvc.Razor
                     // an attribute value that may have been quoted with single quotes, must handle any double quotes
                     // in the value. Writing the value out surrounded by double quotes.
                     //
-                    // Do not combine following condition with check of escapeQuotes; htmlString.ToString() can be
-                    // expensive when the HtmlString is created with a StringCollectionTextWriter.
-                    var stringValue = htmlString.ToString();
+                    // Do not combine following condition with check of escapeQuotes; htmlContent.ToString() can be
+                    // expensive when the IHtmlContent is created with a BufferedHtmlContent.
+                    var stringValue = htmlContent.ToString();
                     if (stringValue.Contains("\""))
                     {
                         writer.Write(stringValue.Replace("\"", "&quot;"));
@@ -187,11 +191,11 @@ namespace Wyam.Modules.Razor.Microsoft.AspNet.Mvc.Razor
                     }
                 }
 
-                htmlString.WriteTo(writer);
+                htmlContent.WriteTo(writer);
                 return;
             }
 
-            // One more check to see if it's an old-school IHtmlString
+            // Wyam - One more check to see if it's an old-school IHtmlString
             var iHtmlString = value as IHtmlString;
             if (iHtmlString != null)
             {
@@ -239,6 +243,7 @@ namespace Wyam.Modules.Razor.Microsoft.AspNet.Mvc.Razor
         /// <summary>
         /// Writes the specified <paramref name="value"/> without HTML encoding to <see cref="Output"/>.
         /// </summary>
+        /// <param name="writer">The <see cref="TextWriter"/> instance to write to.</param>
         /// <param name="value">The <see cref="string"/> to write.</param>
         public virtual void WriteLiteralTo([NotNull] TextWriter writer, string value)
         {
@@ -317,7 +322,8 @@ namespace Wyam.Modules.Razor.Microsoft.AspNet.Mvc.Razor
                         WritePositionTaggedLiteral(writer, prefix);
                         first = false;
                     }
-                    else
+
+                    if (!string.IsNullOrEmpty(attrVal.Prefix))
                     {
                         WritePositionTaggedLiteral(writer, attrVal.Prefix);
                     }
@@ -433,7 +439,7 @@ namespace Wyam.Modules.Razor.Microsoft.AspNet.Mvc.Razor
             EnsureMethodCanBeInvoked("RenderSection");
 
             var task = RenderSectionAsyncCore(name, required);
-            return TaskHelper.WaitAndThrowIfFaulted(task);
+            return task.GetAwaiter().GetResult();
         }
 
         /// <summary>

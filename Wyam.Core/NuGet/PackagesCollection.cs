@@ -68,7 +68,7 @@ namespace Wyam.Core.NuGet
         {
             List<string> assemblyPaths = new List<string>();
             FrameworkReducer reducer = new FrameworkReducer();
-            NuGetFramework targetFramework = new NuGetFramework(".NETFramework", Version.Parse("4.5"));  // If alternate versions of Wyam are developed (I.e., for DNX), this will need to be switched
+            NuGetFramework targetFramework = new NuGetFramework(".NETFramework", Version.Parse("4.6"));  // If alternate versions of Wyam are developed (I.e., for DNX), this will need to be switched
             NuGetFrameworkFullComparer frameworkComparer = new NuGetFrameworkFullComparer();
             IPackageRepository packageRepository = PackageRepositoryFactory.Default.CreateRepository(Path);
             PackageManager packageManager = new PackageManager(packageRepository, Path);
@@ -81,10 +81,23 @@ namespace Wyam.Core.NuGet
                 NuGetFramework targetPackageFramework = reducer.GetNearest(targetFramework, filesAndFrameworks.Select(x => x.Value));
                 if (targetPackageFramework != null)
                 {
+                    List<string> packageAssemblyPaths = filesAndFrameworks
+                        .Where(x => frameworkComparer.Equals(targetPackageFramework, x.Value))
+                        .Select(x => System.IO.Path.Combine(Path, String.Format(CultureInfo.InvariantCulture, "{0}.{1}", package.Id, package.Version), x.Key.Path))
+                        .Where(x => System.IO.Path.GetExtension(x) == ".dll")
+                        .ToList();
+                    foreach (string packageAssemblyPath in packageAssemblyPaths)
+                    {
+                        _engine.Trace.Verbose("Added assembly file {0} from package {1}.{2}", packageAssemblyPath, package.Id, package.Version);
+                    }
                     assemblyPaths.AddRange(filesAndFrameworks
                         .Where(x => frameworkComparer.Equals(targetPackageFramework, x.Value))
                         .Select(x => System.IO.Path.Combine(Path, String.Format(CultureInfo.InvariantCulture, "{0}.{1}", package.Id, package.Version), x.Key.Path))
                         .Where(x => System.IO.Path.GetExtension(x) == ".dll"));
+                }
+                else
+                {
+                    _engine.Trace.Verbose("Could not find compatible framework for package {0}.{1} (this is normal for content-only packages)", package.Id, package.Version);
                 }
             }
             return assemblyPaths;

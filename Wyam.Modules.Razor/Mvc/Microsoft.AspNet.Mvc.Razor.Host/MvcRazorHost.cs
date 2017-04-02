@@ -4,11 +4,13 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using Microsoft.AspNet.FileProviders;
 using Microsoft.AspNet.Razor;
 using Microsoft.AspNet.Razor.Generator;
 using Microsoft.AspNet.Razor.Generator.Compiler;
 using Microsoft.AspNet.Razor.Parser;
+using Wyam.Common.Pipelines;
 using Wyam.Modules.Razor.Microsoft.Framework.Internal;
 
 namespace Wyam.Modules.Razor.Microsoft.AspNet.Mvc.Razor
@@ -17,19 +19,13 @@ namespace Wyam.Modules.Razor.Microsoft.AspNet.Mvc.Razor
     {
         private const string DefaultBaseType = "Wyam.Modules.Razor.Microsoft.AspNet.Mvc.Razor.RazorPage";
 
-        private static readonly string[] DefaultNamespaces = new[]
+        private static readonly string[] _defaultNamespaces = new[]
         {
-            "System",
-            "System.Linq",
-            "System.Collections.Generic",
             "Wyam.Modules.Razor.Microsoft.AspNet.Mvc",
-            "Wyam.Modules.Razor.Microsoft.AspNet.Mvc.Rendering",
-            "Wyam.Abstractions",
-            "Wyam.Core",
-            "Wyam.Core.Helpers"
+            "Wyam.Modules.Razor.Microsoft.AspNet.Mvc.Rendering"
         };
 
-        internal MvcRazorHost(Type basePageType)
+        internal MvcRazorHost(IExecutionContext executionContext, Type basePageType)
             : base(new CSharpRazorCodeLanguage())
         {
             DefaultBaseClass = basePageType == null ? DefaultBaseType : basePageType.FullName;
@@ -49,10 +45,11 @@ namespace Wyam.Modules.Razor.Microsoft.AspNet.Mvc.Razor
                 EndContextMethodName = "EndContext"
             };
 
-            foreach (var ns in DefaultNamespaces)
+            foreach (var ns in _defaultNamespaces)
             {
                 NamespaceImports.Add(ns);
             }
+            NamespaceImports.UnionWith(executionContext.Namespaces);
         }
 
         /// <summary>

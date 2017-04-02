@@ -9,8 +9,9 @@
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>Wyam.Modules.Razor</RootNamespace>
     <AssemblyName>Wyam.Modules.Razor</AssemblyName>
-    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.6</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
+    <TargetFrameworkProfile />
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -42,19 +43,11 @@
       <HintPath>..\packages\Microsoft.AspNet.Razor.4.0.0-beta4\lib\net45\Microsoft.AspNet.Razor.dll</HintPath>
     </Reference>
     <Reference Include="Microsoft.CodeAnalysis, Version=1.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
-      <HintPath>..\packages\Microsoft.CodeAnalysis.Common.1.0.0-rc3-20150615-05\lib\net45\Microsoft.CodeAnalysis.dll</HintPath>
+      <HintPath>..\packages\Microsoft.CodeAnalysis.Common.1.0.0\lib\net45\Microsoft.CodeAnalysis.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="Microsoft.CodeAnalysis.CSharp, Version=1.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
-      <HintPath>..\packages\Microsoft.CodeAnalysis.CSharp.1.0.0-rc3-20150615-05\lib\net45\Microsoft.CodeAnalysis.CSharp.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
-    <Reference Include="Microsoft.CodeAnalysis.Scripting, Version=1.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
-      <HintPath>..\packages\Microsoft.CodeAnalysis.Scripting.Common.1.0.0-rc3-20150615-05\lib\net45\Microsoft.CodeAnalysis.Scripting.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
-    <Reference Include="Microsoft.CodeAnalysis.Scripting.CSharp, Version=1.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
-      <HintPath>..\packages\Microsoft.CodeAnalysis.Scripting.CSharp.1.0.0-rc3-20150615-05\lib\net45\Microsoft.CodeAnalysis.Scripting.CSharp.dll</HintPath>
+      <HintPath>..\packages\Microsoft.CodeAnalysis.CSharp.1.0.0\lib\net45\Microsoft.CodeAnalysis.CSharp.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="Microsoft.Framework.Caching.Interfaces, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
@@ -80,19 +73,20 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="BaseRazorPage.cs" />
-    <Compile Include="Common\Microsoft.Framework.BufferEntryCollection.Sources\BufferEntryCollection.cs" />
     <Compile Include="Common\Microsoft.Framework.NotNullAttribute.Sources\NotNullAttribute.cs" />
     <Compile Include="DocumentFileProvider.cs" />
     <Compile Include="HtmlHelper.cs" />
-    <Compile Include="Mvc\Microsoft.AspNet.Mvc.Common\TaskHelper.cs" />
-    <Compile Include="Mvc\Microsoft.AspNet.Mvc.Core\Rendering\DynamicViewData.cs" />
-    <Compile Include="Mvc\Microsoft.AspNet.Mvc.Core\Rendering\HtmlString.cs" />
-    <Compile Include="Mvc\Microsoft.AspNet.Mvc.Core\Rendering\StringCollectionTextWriter.cs" />
-    <Compile Include="Mvc\Microsoft.AspNet.Mvc.Core\Rendering\ViewEngine\IView.cs" />
-    <Compile Include="Mvc\Microsoft.AspNet.Mvc.Core\Rendering\ViewEngine\IViewEngine.cs" />
-    <Compile Include="Mvc\Microsoft.AspNet.Mvc.Core\Rendering\ViewEngine\ViewEngineResult.cs" />
-    <Compile Include="Mvc\Microsoft.AspNet.Mvc.Core\ViewContext.cs" />
-    <Compile Include="Mvc\Microsoft.AspNet.Mvc.Core\ViewDataDictionary.cs" />
+    <Compile Include="HttpAbstractions\Microsoft.AspNet.Html.Abstractions\IHtmlContent.cs" />
+    <Compile Include="Mvc\Microsoft.AspNet.Mvc.ViewFeatures\Rendering\BufferedHtmlContent.cs" />
+    <Compile Include="Mvc\Microsoft.AspNet.Mvc.ViewFeatures\Rendering\DynamicViewData.cs" />
+    <Compile Include="Mvc\Microsoft.AspNet.Mvc.ViewFeatures\Rendering\HtmlHelperPartialExtensions.cs" />
+    <Compile Include="Mvc\Microsoft.AspNet.Mvc.ViewFeatures\Rendering\HtmlString.cs" />
+    <Compile Include="Mvc\Microsoft.AspNet.Mvc.ViewFeatures\Rendering\StringCollectionTextWriter.cs" />
+    <Compile Include="Mvc\Microsoft.AspNet.Mvc.ViewFeatures\Rendering\ViewEngine\IView.cs" />
+    <Compile Include="Mvc\Microsoft.AspNet.Mvc.ViewFeatures\Rendering\ViewEngine\IViewEngine.cs" />
+    <Compile Include="Mvc\Microsoft.AspNet.Mvc.ViewFeatures\Rendering\ViewEngine\ViewEngineResult.cs" />
+    <Compile Include="Mvc\Microsoft.AspNet.Mvc.ViewFeatures\ViewContext.cs" />
+    <Compile Include="Mvc\Microsoft.AspNet.Mvc.ViewFeatures\ViewDataDictionary.cs" />
     <Compile Include="Mvc\Microsoft.AspNet.Mvc.Razor.Host\IMvcRazorHost.cs" />
     <Compile Include="Mvc\Microsoft.AspNet.Mvc.Razor.Host\MvcRazorHost.cs" />
     <Compile Include="Mvc\Microsoft.AspNet.Mvc.Razor.Host\ViewHierarchyUtility.cs" />
@@ -102,7 +96,6 @@
     <Compile Include="Mvc\Microsoft.AspNet.Mvc.Razor\Compilation\RazorFileHash.cs" />
     <Compile Include="Mvc\Microsoft.AspNet.Mvc.Razor\Compilation\RelativeFileInfo.cs" />
     <Compile Include="Mvc\Microsoft.AspNet.Mvc.Razor\HelperResult.cs" />
-    <Compile Include="Mvc\Microsoft.AspNet.Mvc.Razor\Internal\Crc32.cs" />
     <Compile Include="Mvc\Microsoft.AspNet.Mvc.Razor\IRazorPage.cs" />
     <Compile Include="Mvc\Microsoft.AspNet.Mvc.Razor\IRazorPageFactory.cs" />
     <Compile Include="Mvc\Microsoft.AspNet.Mvc.Razor\IRazorViewEngine.cs" />
@@ -121,17 +114,16 @@
     <Compile Include="Razor.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\Wyam.Core\Wyam.Core.csproj">
-      <Project>{bc8c5de2-6692-4e39-a0bb-689c316aeff1}</Project>
-      <Name>Wyam.Core</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\Wyam.Abstractions\Wyam.Abstractions.csproj">
+    <ProjectReference Include="..\Wyam.Common\Wyam.Common.csproj">
       <Project>{f40b73e9-c0cc-465c-925e-b51e686c1d5c}</Project>
-      <Name>Wyam.Abstractions</Name>
+      <Name>Wyam.Common</Name>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="Documentation.xml" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

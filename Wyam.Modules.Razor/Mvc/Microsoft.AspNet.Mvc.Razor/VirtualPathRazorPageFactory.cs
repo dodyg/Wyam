@@ -3,9 +3,12 @@
 
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Security.Policy;
 using Microsoft.AspNet.FileProviders;
-using Wyam.Abstractions;
+using Wyam.Common;
+using Wyam.Common.Caching;
+using Wyam.Common.Pipelines;
 using Wyam.Modules.Razor.Microsoft.AspNet.Mvc.Razor.Compilation;
 using Wyam.Modules.Razor.Microsoft.Framework.Internal;
 
@@ -20,13 +23,14 @@ namespace Wyam.Modules.Razor.Microsoft.AspNet.Mvc.Razor
         private readonly string _rootDirectory;
         private readonly IFileProvider _fileProvider;
         private readonly IRazorCompilationService _razorcompilationService;
-        private readonly Dictionary<string, CacheEntry> _pageCache = new Dictionary<string, CacheEntry>(); 
+        private readonly IExecutionContext _executionContext;
 
         public VirtualPathRazorPageFactory(string rootDirectory, IExecutionContext executionContext, Type basePageType)
         {
             _rootDirectory = rootDirectory;
             _fileProvider = new PhysicalFileProvider(rootDirectory);
             _razorcompilationService = new RazorCompilationService(executionContext, basePageType);
+            _executionContext = executionContext;
         }
 
         /// <inheritdoc />
@@ -35,7 +39,7 @@ namespace Wyam.Modules.Razor.Microsoft.AspNet.Mvc.Razor
             return CreateInstance(relativePath, null);
         }
 
-        public IRazorPage CreateInstance([NotNull] string relativePath, string content)
+        public IRazorPage CreateInstance([NotNull] string relativePath, Stream stream)
         {
             if (relativePath.StartsWith("~/", StringComparison.Ordinal))
             {
@@ -46,46 +50,38 @@ namespace Wyam.Modules.Razor.Microsoft.AspNet.Mvc.Razor
             // Code below is taken from CompilerCache (specifically OnCacheMiss) which is responsible for managing the compilation step in MVC
 
             // Check the file
-            var fileProvider = content == null ? _fileProvider : new DocumentFileProvider(_rootDirectory, content);
+            var fileProvider = stream == null ? _fileProvider : new DocumentFileProvider(_rootDirectory, stream);
             var fileInfo = fileProvider.GetFileInfo(relativePath);
             if (!fileInfo.Exists)
             {
                 return null;
             }
-
+            
             // If relative path is the root, it probably means this isn't from reading a file so don't bother with caching
-            string hash = null;
-            if (relativePath != "/")
+            IExecutionCache cache = relativePath == "/" ? null : _executionContext.ExecutionCache;
+            string key = null;
+            Type pageType = null;
+            if (cache != null)
             {
-                // Check the cache, always just use the hash because we're going to have to store it anyway and the content might not come from a file
-                CacheEntry cacheEntry;
-                hash = RazorFileHash.GetHash(fileInfo);
-                if (_pageCache.TryGetValue(relativePath, out cacheEntry) && cacheEntry.Hash == hash)
+                key = relativePath + " " + RazorFileHash.GetHash(fileInfo);
+                if (!cache.TryGetValue(key, out pageType))
                 {
-                    return cacheEntry.Page;
+                    pageType = null;
                 }
             }
 
-            // Compile and store in cache
-            var relativeFileInfo = new RelativeFileInfo(fileInfo, relativePath);
-            Type result = _razorcompilationService.Compile(relativeFileInfo);
-            IRazorPage page = (IRazorPage)Activator.CreateInstance(result);
-            page.Path = relativePath;
-            if (relativePath != "/")
+            // Compile and store in cache if not found
+            if (pageType == null)
             {
-                _pageCache[relativePath] = new CacheEntry
-                {
-                    Page = page,
-                    Hash = hash
-                };
+                var relativeFileInfo = new RelativeFileInfo(fileInfo, relativePath);
+                pageType = _razorcompilationService.Compile(relativeFileInfo);
+                cache?.Set(key, pageType);
             }
-            return page;
-        }
 
-        private class CacheEntry
-        {
-            public IRazorPage Page { get; set; }
-            public string Hash { get; set; }
+            // Create an return a new page instance
+            IRazorPage page = (IRazorPage)Activator.CreateInstance(pageType);
+            page.Path = relativePath;
+            return page;
         }
     }
 }

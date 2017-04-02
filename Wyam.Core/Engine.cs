@@ -9,12 +9,18 @@ using System.Text;
 using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
-using Microsoft.CodeAnalysis.Scripting;
-using Microsoft.CodeAnalysis.Scripting.CSharp;
 using NuGet;
 using Wyam.Core.Configuration;
 using Wyam.Core.NuGet;
-using Wyam.Abstractions;
+using Wyam.Common;
+using Wyam.Common.Documents;
+using Wyam.Common.IO;
+using Wyam.Common.Pipelines;
+using Wyam.Common.Tracing;
+using Wyam.Core.Caching;
+using Wyam.Core.Documents;
+using Wyam.Core.Pipelines;
+using Wyam.Core.Tracing;
 
 namespace Wyam.Core
 {
@@ -23,53 +29,40 @@ namespace Wyam.Core
         private Configurator _configurator = null;
         private bool _disposed;
 
-        private readonly Dictionary<string, object> _metadata;
+        private readonly Dictionary<string, object> _metadata = new Dictionary<string, object>();
 
         // This is used as the initial set of metadata for each run
-        public IDictionary<string, object> Metadata
-        {
-            get { return _metadata; }
-        }
-        
-        private readonly DocumentCollection _documents = new DocumentCollection();
+        public IDictionary<string, object> Metadata => _metadata;
 
-        public IDocumentCollection Documents
-        {
-            get { return _documents; }
-        }
+        public IDocumentCollection Documents => DocumentCollection;
 
-        internal DocumentCollection DocumentCollection
-        {
-            get {  return _documents; }
-        }
+        internal DocumentCollection DocumentCollection { get; } = new DocumentCollection();
 
         private readonly PipelineCollection _pipelines;
 
-        public IPipelineCollection Pipelines
-        {
-            get { return _pipelines; }
-        }
+        public IPipelineCollection Pipelines => _pipelines;
 
-        private readonly Trace _trace = new Trace();
+        private readonly Tracing.Trace _trace = new Tracing.Trace();
 
-        public ITrace Trace
-        {
-            get { return _trace; }
-        }
-        
-        public byte[] RawConfigAssembly
-        {
-            get { return _configurator == null ? null : _configurator.RawConfigAssembly; }
-        }
+        public ITrace Trace => _trace;
 
-        public IEnumerable<Assembly> Assemblies
+        public byte[] RawConfigAssembly => _configurator?.RawConfigAssembly;
+
+        public IEnumerable<Assembly> Assemblies => _configurator?.Assemblies;
+
+        public IEnumerable<string> Namespaces => _configurator?.Namespaces;
+
+        internal ExecutionCacheManager ExecutionCacheManager { get; } = new ExecutionCacheManager();
+
+        public bool NoCache
         {
-            get { return _configurator == null ? null : _configurator.Assemblies; }
+            get { return ExecutionCacheManager.NoCache; }
+            set { ExecutionCacheManager.NoCache = value; }
         }
         
         private string _rootFolder = Environment.CurrentDirectory;
-        private string _inputFolder = @".\Input";
-        private string _outputFolder = @".\Output";
+        private string _inputFolder = "Input";
+        private string _outputFolder = "Output";
 
         public string RootFolder
         {
@@ -78,59 +71,56 @@ namespace Wyam.Core
             {
                 if (string.IsNullOrWhiteSpace(value))
                 {
-                    throw new ArgumentException("RootFolder");
+                    throw new ArgumentException(nameof(value));
                 }
-                _rootFolder = value;
+                _rootFolder = Path.GetFullPath(PathHelper.NormalizePath(value));
             }
         }
 
         public string InputFolder
         {
-            get { return Path.Combine(RootFolder, _inputFolder); }
+            get
+            {
+                // Calculate this each time in case the root folder changes after setting it
+                return Path.GetFullPath(Path.Combine(RootFolder, PathHelper.NormalizePath(_inputFolder)));
+            }
             set
             {
                 if (string.IsNullOrWhiteSpace(value))
                 {
-                    throw new ArgumentException("InputFolder");
+                    throw new ArgumentException(nameof(value));
                 }
-                _inputFolder = value;
+                _inputFolder = PathHelper.NormalizePath(value);;
             }
         }
 
         public string OutputFolder
         {
-            get { return Path.Combine(RootFolder, _outputFolder); }
+            get
+            {
+                // Calculate this each time in case the root folder changes after setting it
+                return Path.GetFullPath(Path.Combine(RootFolder, PathHelper.NormalizePath(_outputFolder)));
+            }
             set
             {
                 if (string.IsNullOrWhiteSpace(value))
                 {
                     throw new ArgumentException("OutputFolder");
                 }
-                _outputFolder = value;
+                _outputFolder = PathHelper.NormalizePath(value);
             }
         }
+
+        public bool CleanOutputFolderOnExecute { get; set; } = true;
 
         public Engine()
         {
-            _metadata = new Dictionary<string, object>();
             _pipelines = new PipelineCollection(this);
         }
 
-        // This maps Roslyn diagnostic levels to tracing levels
-        private static readonly Dictionary<DiagnosticSeverity, TraceEventType> DiagnosticMapping 
-            = new Dictionary<DiagnosticSeverity, TraceEventType>()
-            {
-                { DiagnosticSeverity.Error, TraceEventType.Error },
-                { DiagnosticSeverity.Warning, TraceEventType.Warning },
-                { DiagnosticSeverity.Info, TraceEventType.Information }
-            };
-
-        public void Configure(string configScript = null, bool updatePackages = false)
+        public void Configure(string configScript = null, bool updatePackages = false, string fileName = null, bool outputScripts = false)
         {
-            if (_disposed)
-            {
-                throw new ObjectDisposedException("Engine");
-            }
+            CheckDisposed();
 
             try
             {
@@ -138,7 +128,7 @@ namespace Wyam.Core
                 {
                     throw new InvalidOperationException("This engine has already been configured.");
                 }
-                _configurator = new Configurator(this);
+                _configurator = new Configurator(this, fileName, outputScripts);
                 _configurator.Configure(configScript, updatePackages);
             }
             catch (Exception ex)
@@ -148,17 +138,37 @@ namespace Wyam.Core
             }
         }
 
+        public void CleanOutputFolder()
+        {
+            try
+            {
+                Trace.Information("Cleaning output directory {0}", OutputFolder);
+                if (Directory.Exists(OutputFolder))
+                {
+                    Directory.Delete(OutputFolder, true);
+                }
+                Trace.Information("Cleaned output directory.");
+            }
+            catch (Exception ex)
+            {
+                Trace.Warning("Error while cleaning output directory: {0} - {1}", ex.GetType(), ex.Message);
+            }
+        }
+
         public void Execute()
         {
-            if (_disposed)
-            {
-                throw new ObjectDisposedException("Engine");
-            }
+            CheckDisposed();
 
             // Configure with defaults if not already configured
-            if(_configurator == null)
+            if (_configurator == null)
             {
                 Configure();
+            }
+
+            // Clean the output folder if requested
+            if (CleanOutputFolderOnExecute)
+            {
+                CleanOutputFolder();
             }
 
             // Create the input and output folders if they don't already exist
@@ -170,31 +180,50 @@ namespace Wyam.Core
             {
                 Directory.CreateDirectory(OutputFolder);
             }
-
-            int outerIndent = Trace.IndentLevel;
+            
             try
             {
-                Trace.Information("Executing {0} pipelines...", _pipelines.Count);
-                outerIndent = Trace.Indent();
-                _documents.Clear();
-                int c = 1;
-                foreach(Pipeline pipeline in _pipelines.Pipelines)
+                Stopwatch engineStopwatch = Stopwatch.StartNew();
+                using (Trace.WithIndent().Information("Executing {0} pipelines", _pipelines.Count))
                 {
-                    Trace.Information("Executing pipeline \"{0}\" ({1}/{2}) with {3} child module(s)...", pipeline.Name, c, _pipelines.Count, pipeline.Count);
-                    int indent = Trace.Indent();
-                    string pipelineName = pipeline.Name;
-                    pipeline.Execute();
-                    Trace.IndentLevel = indent;
-                    Trace.Information("Executed pipeline \"{0}\" ({1}/{2}) resulting in {3} output document(s).", 
-                        pipeline.Name, c++, _pipelines.Count, _documents.FromPipeline(pipelineName).Count());
+                    // Setup (clear the document collection and reset cache counters)
+                    DocumentCollection.Clear();
+                    ExecutionCacheManager.ResetEntryHits();
+
+                    // Enumerate pipelines and execute each in order
+                    int c = 1;
+                    foreach(Pipeline pipeline in _pipelines.Pipelines)
+                    {
+                        Stopwatch pipelineStopwatch = Stopwatch.StartNew();
+                        using (Trace.WithIndent().Information("Executing pipeline \"{0}\" ({1}/{2}) with {3} child module(s)", pipeline.Name, c, _pipelines.Count, pipeline.Count))
+                        {
+                            pipeline.Execute();
+                            pipelineStopwatch.Stop();
+                            Trace.Information("Executed pipeline \"{0}\" ({1}/{2}) in {3} ms resulting in {4} output document(s)",
+                                pipeline.Name, c++, _pipelines.Count, pipelineStopwatch.ElapsedMilliseconds,
+                                DocumentCollection.FromPipeline(pipeline.Name).Count());
+                        }
+                    }
+
+                    // Clean up (clear unhit cache entries, dispose documents)
+                    // Note that disposing the documents immediately after engine execution will ensure write streams get flushed and released
+                    // but will also mean that callers (and tests) can't access documents and document content after the engine finishes
+                    // Easiest way to access content after engine execution is to add a final Meta module and copy content to metadata
+                    ExecutionCacheManager.ClearUnhitEntries(this);
+                    foreach (Pipeline pipeline in _pipelines.Pipelines)
+                    {
+                        pipeline.ResetClonedDocuments();
+                    }
+
+                    engineStopwatch.Stop();
+                    Trace.Information("Executed {0} pipelines in {1} ms",
+                        _pipelines.Count, engineStopwatch.ElapsedMilliseconds);
                 }
-                Trace.IndentLevel = outerIndent;
-                Trace.Information("Executed {0} pipelines.", _pipelines.Count);
+
             }
             catch (Exception ex)
             {
-                Trace.IndentLevel = outerIndent;
-                Trace.Verbose("Exception: {0}", ex);
+                Trace.Verbose("Exception while executing pipelines: {0}", ex);
                 throw;
             }
         }
@@ -203,13 +232,23 @@ namespace Wyam.Core
         {
             if (_disposed)
             {
-                throw new ObjectDisposedException("Engine");
+                return;
             }
-            _disposed = true;
-            _trace.Dispose();
-            if (_configurator != null)
+
+            foreach (Pipeline pipeline in _pipelines.Pipelines)
             {
-                _configurator.Dispose();
+                pipeline.Dispose();
+            }
+            _trace.Dispose();
+            _configurator?.Dispose();
+            _disposed = true;
+        }
+
+        private void CheckDisposed()
+        {
+            if (_disposed)
+            {
+                throw new ObjectDisposedException(nameof(Engine));
             }
         }
     }

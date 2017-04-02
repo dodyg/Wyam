@@ -8,12 +8,14 @@ using NSubstitute;
 using NUnit.Framework;
 using Wyam.Core;
 using Wyam.Core.Modules;
-using Wyam.Abstractions;
+using Wyam.Common;
+using Wyam.Common.Documents;
 using YamlDotNet.Dynamic;
 
 namespace Wyam.Modules.Yaml.Tests
 {
     [TestFixture]
+    [Parallelizable(ParallelScope.Self | ParallelScope.Children)]
     public class YamlFixture
     {
         [Test]
@@ -21,10 +23,6 @@ namespace Wyam.Modules.Yaml.Tests
         {
             // Given
             IDocument document = Substitute.For<IDocument>();
-            IEnumerable<KeyValuePair<string, object>> items = null;
-            document
-                .When(x => x.Clone(Arg.Any<IEnumerable<KeyValuePair<string, object>>>()))
-                .Do(x => items = x.Arg<IEnumerable<KeyValuePair<string, object>>>());
             document.Content.Returns(@"A: 1");
             Yaml yaml = new Yaml("MyYaml");
 
@@ -32,9 +30,8 @@ namespace Wyam.Modules.Yaml.Tests
             yaml.Execute(new [] { document }, null).ToList();  // Make sure to materialize the result list
 
             // Then
-            document.Received().Clone(Arg.Any<IEnumerable<KeyValuePair<string, object>>>());
-            Assert.AreEqual(1, items.Count());
-            Assert.AreEqual("MyYaml", items.First().Key);
+            document.Received(1).Clone(Arg.Any<IEnumerable<KeyValuePair<string, object>>>());
+            document.Received().Clone(Arg.Is<IEnumerable<KeyValuePair<string, object>>>(x => x.First().Key == "MyYaml"));
         }
 
         [Test]
@@ -57,7 +54,7 @@ C: Yes
             yaml.Execute(new[] { document }, null).ToList();  // Make sure to materialize the result list
 
             // Then
-            document.Received().Clone(Arg.Any<IEnumerable<KeyValuePair<string, object>>>());
+            document.Received(1).Clone(Arg.Any<IEnumerable<KeyValuePair<string, object>>>());
             Assert.AreEqual(1, items.Count());
             Assert.IsInstanceOf<DynamicYaml>(items.First().Value);
             Assert.AreEqual(1, (int)((dynamic)items.First().Value).A);
@@ -85,7 +82,7 @@ C: Yes
             yaml.Execute(new[] { document }, null).ToList();  // Make sure to materialize the result list
 
             // Then
-            document.Received().Clone(Arg.Any<IEnumerable<KeyValuePair<string, object>>>());
+            document.Received(1).Clone(Arg.Any<IEnumerable<KeyValuePair<string, object>>>());
             Assert.AreEqual(3, items.Count());
             Assert.AreEqual("1", items.First(x => x.Key == "A").Value);
             Assert.AreEqual("true", items.First(x => x.Key == "B").Value);

@@ -1,0 +1,79 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{F40B73E9-C0CC-465C-925E-B51E686C1D5C}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>Wyam.Common</RootNamespace>
+    <AssemblyName>Wyam.Common</AssemblyName>
+    <TargetFrameworkVersion>v4.6</TargetFrameworkVersion>
+    <FileAlignment>512</FileAlignment>
+    <TargetFrameworkProfile />
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="System" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.Xml.Linq" />
+    <Reference Include="System.Data.DataSetExtensions" />
+    <Reference Include="Microsoft.CSharp" />
+    <Reference Include="System.Data" />
+    <Reference Include="System.Xml" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="Meta\CachedDelegateMetadataValue.cs" />
+    <Compile Include="Meta\MetadataItems.cs" />
+    <Compile Include="Meta\Keys.cs" />
+    <Compile Include="Modules\ContentModule.cs" />
+    <Compile Include="Configuration\ContextConfig.cs" />
+    <Compile Include="Configuration\ConfigExtensions.cs" />
+    <Compile Include="Caching\Crc32.cs" />
+    <Compile Include="Meta\DelegateMetadataValue.cs" />
+    <Compile Include="Documents\DocumentCollectionExtensions.cs" />
+    <Compile Include="Configuration\DocumentConfig.cs" />
+    <Compile Include="Documents\IDocumentCollection.cs" />
+    <Compile Include="Tracing\IIndentedTraceEvent.cs" />
+    <Compile Include="Meta\IMetadata.cs" />
+    <Compile Include="Meta\IMetadataValue.cs" />
+    <Compile Include="Modules\IModule.cs" />
+    <Compile Include="Documents\IDocument.cs" />
+    <Compile Include="Pipelines\IPipeline.cs" />
+    <Compile Include="Pipelines\IPipelineCollection.cs" />
+    <Compile Include="Pipelines\IExecutionContext.cs" />
+    <Compile Include="Pipelines\IReadOnlyPipeline.cs" />
+    <Compile Include="Caching\IExecutionCache.cs" />
+    <Compile Include="Tracing\ITrace.cs" />
+    <Compile Include="Configuration\ConfigHelper.cs" />
+    <Compile Include="Meta\MetadataItem.cs" />
+    <Compile Include="IO\PathHelper.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+  </ItemGroup>
+  <ItemGroup />
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
+       Other similar extension points exist, see Microsoft.Common.targets.
+  <Target Name="BeforeBuild">
+  </Target>
+  <Target Name="AfterBuild">
+  </Target>
+  -->
+</Project>

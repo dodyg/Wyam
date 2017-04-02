@@ -7,11 +7,15 @@ using System.Text;
 using System.Threading.Tasks;
 using Wyam.Core;
 using Wyam.Core.Modules;
+using Wyam.Core.Modules.Extensibility;
+using Wyam.Core.Modules.Metadata;
+using Wyam.Core.Pipelines;
 
 
 namespace Wyam.Core.Tests
 {
     [TestFixture]
+    [Parallelizable(ParallelScope.Self | ParallelScope.Children)]
     public class EngineFixture
     {
         [Test]
@@ -79,6 +83,7 @@ namespace Wyam.Core.Tests
         {
             // Given
             Engine engine = new Engine();
+            engine.CleanOutputFolderOnExecute = false;
             CountModule a = new CountModule("A")
             {
                 AdditionalOutputs = 1
@@ -113,16 +118,17 @@ namespace Wyam.Core.Tests
         {
             // Given
             Engine engine = new Engine();
+            engine.CleanOutputFolderOnExecute = false;
             int c = 0;
             engine.Pipelines.Add("Pipeline",
-                new Execute(x => new[]
+                new Execute((x, ctx) => new[]
                 {
-                    x.Clone(null, new Dictionary<string, object> { { c.ToString(), c++ } }), 
-                    x.Clone(null, new Dictionary<string, object> { { c.ToString(), c++ } })
+                    x.Clone((string)null, new Dictionary<string, object> { { c.ToString(), c++ } }), 
+                    x.Clone((string)null, new Dictionary<string, object> { { c.ToString(), c++ } })
                 }),
-                new Execute(x => new[]
+                new Execute((x, ctx) => new[]
                 {
-                    x.Clone(null, new Dictionary<string, object> { { c.ToString(), c++ } })
+                    x.Clone((string)null, new Dictionary<string, object> { { c.ToString(), c++ } })
                 }));
 
             // When
@@ -151,25 +157,27 @@ namespace Wyam.Core.Tests
         {
             // Given
             Engine engine = new Engine();
+            engine.CleanOutputFolderOnExecute = false;
             int c = 0;
             engine.Pipelines.Add(
-                new Execute(x => new[]
+                new Execute((x, ctx) => new[]
                 {
                     x.Clone((c++).ToString()), 
                     x.Clone((c++).ToString())
                 }),
-                new Execute(x => new[]
+                new Execute((x, ctx) => new[]
                 {
                     x.Clone((c++).ToString())
-                }));
+                }),
+                new Core.Modules.Metadata.Meta("Content", (x, y) => x.Content));
 
             // When
             engine.Execute();
 
             // Then
             Assert.AreEqual(2, engine.Documents.FromPipeline("Pipeline 1").Count());
-            Assert.AreEqual("2", engine.Documents.FromPipeline("Pipeline 1").First().Content);
-            Assert.AreEqual("3", engine.Documents.FromPipeline("Pipeline 1").Skip(1).First().Content);
+            Assert.AreEqual("2", engine.Documents.FromPipeline("Pipeline 1").First().String("Content"));
+            Assert.AreEqual("3", engine.Documents.FromPipeline("Pipeline 1").Skip(1).First().String("Content"));
         }
     }
 }
